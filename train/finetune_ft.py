@@ -1,52 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
+import csv
 import os, math, argparse, numpy as np
 import torch, torch.nn as nn, torch.optim as optim
 from torch.utils.data import DataLoader
-
-# === 你的项目内模块（路径不要改）===
 from DataProcess import NinaPro
 from Model.EMGMambaAttentionAdapter import EMGMambaAdapter
+from utils.Methods.methods import compute_metrics_numpy  # 预训练脚本里用的实现
+from torch.utils.tensorboard import SummaryWriter
 
-# 尝试从你项目的工具函数导入皮尔逊相关；若失败则回退到 numpy 实现
-try:
-    from utils.Methods.methods import pearson_CC  # 预训练脚本里用的实现
-except Exception:
-    def pearson_CC(y_true, y_pred):
-        # y_true, y_pred: [N, T] 或 [N, C]
-        # 按列计算皮尔逊r并取平均
-        y_true = np.asarray(y_true)
-        y_pred = np.asarray(y_pred)
-        y_true = y_true - y_true.mean(axis=0, keepdims=True)
-        y_pred = y_pred - y_pred.mean(axis=0, keepdims=True)
-        num = (y_true * y_pred).sum(axis=0)
-        den = np.sqrt((y_true ** 2).sum(axis=0) * (y_pred ** 2).sum(axis=0) + 1e-12)
-        r = num / (den + 1e-12)
-        return float(np.nanmean(r))
 
-def compute_metrics_numpy(y_true, y_pred):
-    """
-    计算与预训练阶段一致的三项指标：NRMSE（min-max 归一化）、CC(皮尔逊)、R2（variance_weighted）
-    输入形状：y_true, y_pred -> [N, 10] 或 [*, 10]，内部会 reshape
-    返回：NRMSE(float), CC(float), R2(float)
-    """
-    from skimage import metrics as skimetrics
-    from sklearn.metrics import r2_score
-
-    y_true = np.asarray(y_true).reshape(-1, 10)
-    y_pred = np.asarray(y_pred).reshape(-1, 10)
-
-    # NRMSE：skimage >= 0.21 提供 normalized_root_mse
-    NRMSE = float(skimetrics.normalized_root_mse(y_true, y_pred, normalization="min-max"))
-
-    # Pearson CC：按列求相关并聚合（与预训练保持一致）
-    CC = float(pearson_CC(y_true, y_pred))
-
-    # R2：对每个输出通道求R2，再按方差加权
-    R2 = float(r2_score(y_true.T, y_pred.T, multioutput="variance_weighted"))
-    return NRMSE, CC, R2
-
+# 运行一个个体的 FT
 def run_ft_for_one_target(args, device, target_id: str):
     # 1) 数据路径（默认 E2_A1；如你的特征是 E1_A1，请把 E2 改成 E1）
     emg_tr = os.path.join(args.data_root, f"{target_id}_E2_A1_rms_train.h5")
@@ -79,7 +43,7 @@ def run_ft_for_one_target(args, device, target_id: str):
 
     model = EMGMambaAdapter(input_dim=12, output_dim=10).to(device)
     model.load_state_dict(state, strict=False)
-
+    #冻结参数
     for n, p in model.named_parameters():
         p.requires_grad = ('adapter' in n) or ('output_proj' in n)
 
@@ -89,7 +53,13 @@ def run_ft_for_one_target(args, device, target_id: str):
     # 4) 保存目录
     save_dir_one = os.path.join(args.save_dir, f"ft_{target_id}")
     os.makedirs(save_dir_one, exist_ok=True)
-
+    writer = SummaryWriter(log_dir=os.path.join(save_dir_one, "tb"))
+    csv_path = os.path.join(save_dir_one, "history.csv")
+    need_header = not os.path.exists(csv_path)
+    csv_f = open(csv_path, "a", newline="")
+    csv_w = csv.writer(csv_f)
+    if need_header:
+        csv_w.writerow(["epoch","train_mse","val_mse","nrmse","cc","r2","select_metric","score","is_best"])
     # 5) 训练循环
     # best_score：按指标方向选择；mse/nrmse 越小越好；cc/r2 越大越好
     best_score = math.inf if args.select_metric in ['mse', 'nrmse'] else -math.inf
@@ -145,6 +115,13 @@ def run_ft_for_one_target(args, device, target_id: str):
             except Exception as e:
                 print(f"[Warn] metric computation failed: {e}")
                 NRMSE, CC, R2 = float('nan'), float('nan'), float('nan')
+            writer.add_scalar("loss/train_mse", avg_train, epoch)
+            writer.add_scalar("loss/val_mse", avg_val, epoch)
+            writer.add_scalar("metrics/NRMSE", NRMSE, epoch)
+            writer.add_scalar("metrics/CC", CC, epoch)
+            writer.add_scalar("metrics/R2", R2, epoch)
+
+            writer.flush()
         else:
             NRMSE, CC, R2 = float('nan'), float('nan'), float('nan')
 
@@ -174,9 +151,17 @@ def run_ft_for_one_target(args, device, target_id: str):
             best_score = cur_score
             torch.save({'epoch': epoch, 'model_state': model.state_dict()},
                        os.path.join(save_dir_one, 'ft_best.pth'))
+        csv_w.writerow([epoch, avg_train, avg_val, NRMSE, CC, R2, args.select_metric, cur_score, int(is_better)])
+        csv_f.flush()
 
-        # 清理显存
+        print(f"[FT {target_id}] Epoch {epoch:03d}  Train(MSE)={avg_train:.6f}  Val(MSE)={avg_val:.6f}  "
+              f"NRMSE={NRMSE:.4f}  CC={CC:.4f}  R2={R2:.4f}  ")
+
+
         torch.cuda.empty_cache()
+
+    writer.close()
+    csv_f.close()
 
 def main():
     ap = argparse.ArgumentParser(description="Fine-tuning (FT) with multi-target support & rich metrics")
@@ -187,7 +172,7 @@ def main():
     ap.add_argument('--target_subject', type=str, default=None)
     # 多目标：S31 S32 ... S40
     ap.add_argument('--targets', nargs='+', default=[f"S{i}" for i in range(31, 41)])
-    ap.add_argument('--save_dir', type=str, default='./checkpoints_ft')
+    ap.add_argument('--save_dir', type=str, default='../result/check/checkpoints_ft')
     ap.add_argument('--epochs', type=int, default=50)
     ap.add_argument('--batch_size', type=int, default=64)
     ap.add_argument('--lr', type=float, default=1e-3)

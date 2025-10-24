@@ -237,7 +237,27 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError(f'Boolean value expected. Your input:{v} and input type:{type(v)}')
 
+def compute_metrics_numpy(y_true, y_pred):
+    """
+    计算与预训练阶段一致的三项指标：NRMSE（min-max 归一化）、CC(皮尔逊)、R2（variance_weighted）
+    输入形状：y_true, y_pred -> [N, 10] 或 [*, 10]，内部会 reshape
+    返回：NRMSE(float), CC(float), R2(float)
+    """
+    from skimage import metrics as skimetrics
+    from sklearn.metrics import r2_score
 
+    y_true = np.asarray(y_true).reshape(-1, 10)
+    y_pred = np.asarray(y_pred).reshape(-1, 10)
+
+    # NRMSE：skimage >= 0.21 提供 normalized_root_mse
+    NRMSE = float(skimetrics.normalized_root_mse(y_true, y_pred, normalization="min-max"))
+
+    # Pearson CC：按列求相关并聚合（与预训练保持一致）
+    CC = float(pearson_CC(y_true, y_pred))
+
+    # R2：对每个输出通道求R2，再按方差加权
+    R2 = float(r2_score(y_true.T, y_pred.T, multioutput="variance_weighted"))
+    return NRMSE, CC, R2
 def savitzky_golay_smoothing(window_length, polyorder, data_tensor):
     """
     对 PyTorch Tensor 数据应用 Savitzky-Golay 平滑。
