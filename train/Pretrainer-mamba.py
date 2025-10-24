@@ -34,7 +34,7 @@ def main():
     parser = argparse.ArgumentParser(description='Pretrain Multi-s-net on S1–S30')
     parser.add_argument('--subjects', nargs='+', default=[f"S{i}" for i in range(1, 31)])
     parser.add_argument('--data_root', type=str, default='../../../feature/ninapro_db2_trans')
-    parser.add_argument('--epoch', type=int, default=400)
+    parser.add_argument('--epoch', type=int, default=200)
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--subframe', type=int, default=200)

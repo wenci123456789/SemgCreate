@@ -60,7 +60,7 @@ def export_one(mat_path, save_dir=SAVE_DIR):
 if __name__ == "__main__":
     os.makedirs(SAVE_DIR, exist_ok=True)
     # 批量导出 S1–S30（E1_A1，你也可以换成 E2_A1）
-    for sid in range(1, 31):
+    for sid in range(31, 41):
         mat = os.path.join(RAW_DIR, f"DB2_s{sid}/S{sid}_E2_A1.mat")
         print("=> exporting", mat)
         export_one(mat, save_dir=SAVE_DIR)
