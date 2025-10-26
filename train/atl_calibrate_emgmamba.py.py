@@ -11,6 +11,7 @@ from Model.EMGMambaAttentionAdapter import EMGMambaAdapter
 from utils.Methods.methods import compute_metrics_numpy
 
 class DomainDiscriminator(nn.Module):
+    """标准 ATL：仅对齐倒数第二层特征 f"""
     def __init__(self, in_dim, hidden=256, p=0.2):
         super().__init__()
         self.net = nn.Sequential(
