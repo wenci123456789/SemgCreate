@@ -167,12 +167,12 @@ def main():
     ap = argparse.ArgumentParser(description="Fine-tuning (FT) with multi-target support & rich metrics")
     ap.add_argument('--data_root', type=str, default='../../../feature/ninapro_db2_trans')
     # 让 --pretrained 有默认值；也可在命令行覆盖
-    ap.add_argument('--pretrained', type=str, default='../result/checkpoints_pretrain/model_best.pth')
+    ap.add_argument('--pretrained', type=str, default='../result/ninapro/checkpoints_pretrain/sEMGMamba/model_best.pth')
     # 向后兼容的单目标
     ap.add_argument('--target_subject', type=str, default=None)
     # 多目标：S31 S32 ... S40
     ap.add_argument('--targets', nargs='+', default=[f"S{i}" for i in range(31, 41)])
-    ap.add_argument('--save_dir', type=str, default='../result/check/checkpoints_ft')
+    ap.add_argument('--save_dir', type=str, default='../result/ninapro/Estimation_result/sEMGMamba/checkpoints_ft')
     ap.add_argument('--epochs', type=int, default=50)
     ap.add_argument('--batch_size', type=int, default=64)
     ap.add_argument('--lr', type=float, default=1e-3)

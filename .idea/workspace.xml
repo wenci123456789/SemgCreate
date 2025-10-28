@@ -4,11 +4,36 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b369db96-bef7-4cb2-b58e-fddeebef10b2" name="更改" comment="ATL代码复现">
-      <change afterPath="$PROJECT_DIR$/train/cdanr_corrboost_emgmamba.py" afterDir="false" />
+    <list default="true" id="b369db96-bef7-4cb2-b58e-fddeebef10b2" name="更改" comment="cdanr迁移学习方法">
+      <change afterPath="$PROJECT_DIR$/Estimation/eval_jointwise_models.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Estimation/jointwise_cc_heatmap_box.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Estimation/robustness_cc_eval_plot.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/static.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/train_ninapro/Pretrainer-sEMGRoformer.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/utils/sEMG_models/sEMG_RoFormer.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/utils/sEMG_models/transformer.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train/atl_calibrate_emgmamba.py.py" beforeDir="false" afterPath="$PROJECT_DIR$/train/atl_calibrate_emgmamba.py.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train/atl_cdanr_emgmamba.py" beforeDir="false" afterPath="$PROJECT_DIR$/train/atl_cdanr_emgmamba.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DataProcess/FeatureExtract_Ninapro_transfer.py" beforeDir="false" afterPath="$PROJECT_DIR$/DataProcess/FeatureExtract_Ninapro_transfer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DataProcess/NinaPro.py" beforeDir="false" afterPath="$PROJECT_DIR$/DataProcess/NinaPro.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DataProcess/datapre.py" beforeDir="false" afterPath="$PROJECT_DIR$/DataProcess/datapre.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Demo/DataSetDemo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Estimation/perference_estimation.py" beforeDir="false" afterPath="$PROJECT_DIR$/Estimation/perference_estimation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MdFile/task.md" beforeDir="false" afterPath="$PROJECT_DIR$/static/task.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/train/Pretrainer-mamba.py" beforeDir="false" afterPath="$PROJECT_DIR$/train_ninapro/Pretrainer-sEMGmamba.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/train/Trainer-mamba+attn+adapt.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/train/Trainer-mamba-adapter.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/train/Trainer-mamba-cross.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/train/Trainer-mamba.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/train/atl_calibrate_emgmamba.py.py" beforeDir="false" afterPath="$PROJECT_DIR$/train_ninapro/atl_calibrate_emgmamba.py.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/train/atl_cdanr_emgmamba.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/train/cdanr_corrboost_emgmamba.py" beforeDir="false" afterPath="$PROJECT_DIR$/train_ninapro/cdanr_corrboost_emgmamba.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/train/finetune_ft.py" beforeDir="false" afterPath="$PROJECT_DIR$/train_ninapro/finetune_ft.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/train/noFinetune_ft.py" beforeDir="false" afterPath="$PROJECT_DIR$/train_ninapro/noFinetune_ft.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/sEMG_models/Convit_MDFA.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/sEMG_models/LE_ConVit.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/sEMG_models/LE_DscvMN.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/sEMG_models/LE_MDFA.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/sEMG_models/LifelongCrossSubjectNetwork.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -30,18 +55,18 @@
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "wenci123456789"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;wenci123456789&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/wenci123456789/SemgCreate",
-    "accountId": "5004f5a2-52b6-466c-9b91-37cfa89905b3"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/wenci123456789/SemgCreate.git&quot;,
+    &quot;accountId&quot;: &quot;5004f5a2-52b6-466c-9b91-37cfa89905b3&quot;
   }
-}]]></component>
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 0
 }</component>
@@ -58,24 +83,29 @@
     "Python.EMGMambaAttention.executor": "Run",
     "Python.EMGMambaAttentionAdapter.executor": "Run",
     "Python.EMGMambaV2.executor": "Run",
-    "Python.Estimation_single_ninapro.executor": "Debug",
+    "Python.Estimation_single_ninapro.executor": "Run",
     "Python.FeatureExtract_Ninapro.executor": "Debug",
     "Python.FeatureExtract_Ninapro_transfer.executor": "Debug",
     "Python.FeatureExtract_Ninapro_transfer_deepseek.executor": "Run",
     "Python.Pretrainer-mamba.executor": "Run",
+    "Python.Pretrainer-sEMGRoformer.executor": "Run",
+    "Python.Pretrainer-sEMGmamba.executor": "Debug",
     "Python.Trainer-mamba+attn+adapt.executor": "Run",
     "Python.Trainer-mamba-adapter.executor": "Run",
     "Python.Trainer-mamba-cross.executor": "Run",
     "Python.Trainer-mamba.executor": "Run",
     "Python.atl_calibrate_emgmamba.py.executor": "Debug",
     "Python.atl_cdanr_emgmamba.executor": "Debug",
-    "Python.cdanr_corrboost_emgmamba.executor": "Run",
+    "Python.cdanr_corrboost_emgmamba.executor": "Debug",
     "Python.demo.executor": "Run",
+    "Python.eval_jointwise_models (1).executor": "Run",
+    "Python.eval_jointwise_models.executor": "Run",
     "Python.finetune_ft.executor": "Debug",
     "Python.mamba.executor": "Run",
     "Python.noFinetune_ft.executor": "Run",
     "Python.sEMG_BERT.executor": "Run",
     "Python.sEMG_LSTM.executor": "Run",
+    "Python.sEMG_RoFormer.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
@@ -85,7 +115,7 @@
     "WebServerToolWindowPanel.toolwindow.show.permissions": "false",
     "WebServerToolWindowPanel.toolwindow.show.size": "false",
     "git-widget-placeholder": "master",
-    "last_opened_file_path": "E:/semg/create-secend/code/semg-code/SemgCreate2/train",
+    "last_opened_file_path": "E:/semg/create-secend/code/semg-code/SemgCreate2/train_ninapro",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -105,22 +135,22 @@
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="E:\semg\create-secend\code\semg-code\SemgCreate2\train_ninapro" />
+      <recent name="E:\semg\create-secend\code\semg-code\SemgCreate2\Estimation" />
+      <recent name="E:\semg\create-secend\code\semg-code\SemgCreate2\utils\sEMG_models" />
+      <recent name="E:\semg\create-secend\code\semg-code\SemgCreate2\result\estimation" />
       <recent name="E:\semg\create-secend\code\semg-code\SemgCreate2\train" />
-      <recent name="E:\semg\create-secend\code\semg-code\SemgCreate2\Model" />
-      <recent name="E:\semg\create-secend\code\semg-code\SemgCreate2\DataProcess" />
-      <recent name="E:\semg\creae-secend\code\Semg-HD\DataProcess" />
-      <recent name="E:\semg\creae-secend\code\Semg-HD\utils" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="E:\semg\create-secend\code\semg-code\SemgCreate2\Estimation" />
       <recent name="E:\semg\creae-secend\code\Semg-HD\Demo" />
       <recent name="E:\semg\creae-secend\code\Semg-HD\DataProcess" />
       <recent name="E:\semg\creae-secend\code\Semg-HD" />
       <recent name="E:\semg\creae-secend\code\Semg-HD\utils\Methods" />
-      <recent name="E:\semg\creae-secend\code\Semg-HD\utils" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.cdanr_corrboost_emgmamba">
-    <configuration name="EMGMambaAttentionAdapter" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Python.Pretrainer-sEMGRoformer">
+    <configuration name="Estimation_single_ninapro" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="SemgCreate2" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -129,12 +159,12 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Model" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Estimation" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Model/EMGMambaAttentionAdapter.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Estimation/Estimation_single_ninapro.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -143,7 +173,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="EMGMambaAttention" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="Estimation_single_ninapro" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="SemgCreate2" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -152,12 +182,12 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Model" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Estimation" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Model/EMGMambaAttention.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Estimation/Estimation_single_ninapro.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -166,7 +196,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="EMGMambaV2" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="Pretrainer-sEMGRoformer" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="SemgCreate2" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -175,12 +205,12 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Model" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/train_ninapro" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Model/EMGMambaV2.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/train_ninapro/Pretrainer-sEMGRoformer.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -189,7 +219,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="Pretrainer-mamba" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="Pretrainer-sEMGmamba" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="SemgCreate2" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -198,12 +228,12 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/train" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/train_ninapro" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/train/Pretrainer-mamba.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/train_ninapro/Pretrainer-sEMGmamba.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -212,7 +242,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="Trainer-mamba-adapter" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="eval_jointwise_models (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="SemgCreate2" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -221,12 +251,12 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/train" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Estimation" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/train/Trainer-mamba-adapter.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Estimation/eval_jointwise_models.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -235,7 +265,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="Trainer-mamba-cross" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="eval_jointwise_models (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="SemgCreate2" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -244,12 +274,12 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/train" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Estimation" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/train/Trainer-mamba-cross.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Estimation/eval_jointwise_models.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -258,7 +288,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="atl_calibrate_emgmamba.py" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="eval_jointwise_models" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="SemgCreate2" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -267,12 +297,12 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/train" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/result/estimation" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/train/atl_calibrate_emgmamba.py.py" />
+      <option name="SCRIPT_NAME" value="E:\semg\create-secend\code\semg-code\SemgCreate2\Estimation\eval_jointwise_models.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -281,7 +311,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="atl_cdanr_emgmamba" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="sEMG_RoFormer" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="SemgCreate2" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -290,12 +320,12 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/train" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/utils/sEMG_models" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/train/atl_cdanr_emgmamba.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/utils/sEMG_models/sEMG_RoFormer.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -304,7 +334,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="cdanr_corrboost_emgmamba" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="sEMG_RoFormer" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="SemgCreate2" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -313,35 +343,12 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/train" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/utils/sEMG_models" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/train/cdanr_corrboost_emgmamba.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="finetune_ft" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="SemgCreate2" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/train" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/train/finetune_ft.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/utils/sEMG_models/sEMG_RoFormer.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -352,11 +359,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.cdanr_corrboost_emgmamba" />
-        <item itemvalue="Python.atl_cdanr_emgmamba" />
-        <item itemvalue="Python.finetune_ft" />
-        <item itemvalue="Python.atl_calibrate_emgmamba.py" />
-        <item itemvalue="Python.Pretrainer-mamba" />
+        <item itemvalue="Python.Pretrainer-sEMGRoformer" />
+        <item itemvalue="Python.Pretrainer-sEMGmamba" />
+        <item itemvalue="Python.sEMG_RoFormer" />
+        <item itemvalue="Python.eval_jointwise_models (1)" />
+        <item itemvalue="Python.Estimation_single_ninapro" />
       </list>
     </recent_temporary>
   </component>
@@ -399,7 +406,9 @@
       <workItem from="1760846224194" duration="10692000" />
       <workItem from="1760980224121" duration="36924000" />
       <workItem from="1761138447260" duration="184000" />
-      <workItem from="1761139846227" duration="63808000" />
+      <workItem from="1761139846227" duration="78104000" />
+      <workItem from="1761635688768" duration="1379000" />
+      <workItem from="1761637098179" duration="8642000" />
     </task>
     <task id="LOCAL-00001" summary="初始化文件">
       <option name="closed" value="true" />
@@ -441,7 +450,15 @@
       <option name="project" value="LOCAL" />
       <updated>1761310343938</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="cdanr迁移学习方法">
+      <option name="closed" value="true" />
+      <created>1761464976932</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1761464976932</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -478,31 +495,36 @@
     <MESSAGE value="seeds数据准备、特征提取" />
     <MESSAGE value="微调代码、没有迁移学习代码" />
     <MESSAGE value="ATL代码复现" />
-    <option name="LAST_COMMIT_MESSAGE" value="ATL代码复现" />
+    <MESSAGE value="cdanr迁移学习方法" />
+    <option name="LAST_COMMIT_MESSAGE" value="cdanr迁移学习方法" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/SemgCreate2$cdanr_corrboost_emgmamba.coverage" NAME="cdanr_corrboost_emgmamba 覆盖结果" MODIFIED="1761464090798" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/train" />
+    <SUITE FILE_PATH="coverage/SemgCreate2$DataSetDemo__1_.coverage" NAME="DataSetDemo (1) 覆盖结果" MODIFIED="1760766249125" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Demo" />
+    <SUITE FILE_PATH="coverage/SemgCreate2$mamba.coverage" NAME="mamba 覆盖结果" MODIFIED="1760773328982" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Model" />
+    <SUITE FILE_PATH="coverage/SemgCreate2$EMGMambaAttention.coverage" NAME="EMGMambaAttention 覆盖结果" MODIFIED="1761052868605" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Model" />
+    <SUITE FILE_PATH="coverage/SemgCreate2$Trainer_mamba.coverage" NAME="Trainer-mamba 覆盖结果" MODIFIED="1760854093464" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/train" />
+    <SUITE FILE_PATH="coverage/SemgCreate2$eval_jointwise_models.coverage" NAME="eval_jointwise_models 覆盖结果" MODIFIED="1761473052592" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/result/estimation" />
+    <SUITE FILE_PATH="coverage/SemgCreate2$Trainer_mamba_cross.coverage" NAME="Trainer-mamba-cross 覆盖结果" MODIFIED="1761106536539" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/train" />
+    <SUITE FILE_PATH="coverage/SemgCreate2$Pretrainer_sEMGRoformer.coverage" NAME="Pretrainer-sEMGRoformer 覆盖结果" MODIFIED="1761643700986" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/train_ninapro" />
+    <SUITE FILE_PATH="coverage/SemgCreate2$sEMG_RoFormer.coverage" NAME="sEMG_RoFormer 覆盖结果" MODIFIED="1761538134880" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/utils/sEMG_models" />
+    <SUITE FILE_PATH="coverage/SemgCreate2$cdanr_corrboost_emgmamba.coverage" NAME="cdanr_corrboost_emgmamba 覆盖结果" MODIFIED="1761465024950" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/train" />
     <SUITE FILE_PATH="coverage/SemgCreate2$EMGMambaAttentionAdapter.coverage" NAME="EMGMambaAttentionAdapter 覆盖结果" MODIFIED="1761053105509" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Model" />
     <SUITE FILE_PATH="coverage/SemgCreate2$atl_cdanr_emgmamba.coverage" NAME="atl_cdanr_emgmamba 覆盖结果" MODIFIED="1761462962538" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/train" />
-    <SUITE FILE_PATH="coverage/SemgCreate2$atl_calibrate_emgmamba_py.coverage" NAME="atl_calibrate_emgmamba.py 覆盖结果" MODIFIED="1761455738119" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/train" />
+    <SUITE FILE_PATH="coverage/SemgCreate2$atl_calibrate_emgmamba_py.coverage" NAME="atl_calibrate_emgmamba.py 覆盖结果" MODIFIED="1761472472141" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/train" />
     <SUITE FILE_PATH="coverage/SemgCreate2$Trainer_mamba_adapter.coverage" NAME="Trainer-mamba-adapter 覆盖结果" MODIFIED="1761311614190" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/train" />
     <SUITE FILE_PATH="coverage/SemgCreate2$Pretrainer_mamba.coverage" NAME="Pretrainer-mamba 覆盖结果" MODIFIED="1761311709429" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/train" />
     <SUITE FILE_PATH="coverage/SemgCreate2$finetune_ft.coverage" NAME="finetune_ft 覆盖结果" MODIFIED="1761462553560" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/train" />
-    <SUITE FILE_PATH="coverage/SemgCreate2$DataSetDemo__1_.coverage" NAME="DataSetDemo (1) 覆盖结果" MODIFIED="1760766249125" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Demo" />
-    <SUITE FILE_PATH="coverage/SemgCreate2$mamba.coverage" NAME="mamba 覆盖结果" MODIFIED="1760773328982" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Model" />
     <SUITE FILE_PATH="coverage/SemgCreate2$FeatureExtract_Ninapro_transfer_deepseek.coverage" NAME="FeatureExtract_Ninapro_transfer_deepseek 覆盖结果" MODIFIED="1761038330329" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/DataProcess" />
     <SUITE FILE_PATH="coverage/SemgCreate2$noFinetune_ft.coverage" NAME="noFinetune_ft 覆盖结果" MODIFIED="1761307536475" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/train" />
-    <SUITE FILE_PATH="coverage/SemgCreate2$EMGMambaAttention.coverage" NAME="EMGMambaAttention 覆盖结果" MODIFIED="1761052868605" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Model" />
-    <SUITE FILE_PATH="coverage/SemgCreate2$Trainer_mamba.coverage" NAME="Trainer-mamba 覆盖结果" MODIFIED="1760854093464" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/train" />
     <SUITE FILE_PATH="coverage/SemgCreate2$EMGMambaV2.coverage" NAME="EMGMambaV2 覆盖结果" MODIFIED="1761052606312" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Model" />
     <SUITE FILE_PATH="coverage/SemgCreate2$FeatureExtract_Ninapro.coverage" NAME="FeatureExtract_Ninapro 覆盖结果" MODIFIED="1760991004454" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/DataProcess" />
     <SUITE FILE_PATH="coverage/SemgCreate2$FeatureExtract_Ninapro_transfer.coverage" NAME="FeatureExtract_Ninapro_transfer 覆盖结果" MODIFIED="1761291116012" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/DataProcess" />
     <SUITE FILE_PATH="coverage/SemgCreate2$Trainer_mamba_attn_adapt.coverage" NAME="Trainer-mamba+attn+adapt 覆盖结果" MODIFIED="1760851915811" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/train" />
     <SUITE FILE_PATH="coverage/SemgCreate2$sEMG_BERT.coverage" NAME="sEMG_BERT 覆盖结果" MODIFIED="1760770906731" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/utils/sEMG_models" />
-    <SUITE FILE_PATH="coverage/SemgCreate2$Trainer_mamba_cross.coverage" NAME="Trainer-mamba-cross 覆盖结果" MODIFIED="1761106536539" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/train" />
     <SUITE FILE_PATH="coverage/Semg_HD$demo.coverage" NAME="demo 覆盖结果" MODIFIED="1758891826328" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Demo" />
     <SUITE FILE_PATH="coverage/SemgCreate2$DataSetDemo.coverage" NAME="DataSetDemo 覆盖结果" MODIFIED="1760768970781" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Demo" />
     <SUITE FILE_PATH="coverage/SemgCreate2$sEMG_LSTM.coverage" NAME="sEMG_LSTM 覆盖结果" MODIFIED="1760771075626" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/utils/sEMG_models" />
-    <SUITE FILE_PATH="coverage/SemgCreate2$Estimation_single_ninapro.coverage" NAME="Estimation_single_ninapro 覆盖结果" MODIFIED="1760876181579" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Estimation" />
+    <SUITE FILE_PATH="coverage/SemgCreate2$Estimation_single_ninapro.coverage" NAME="Estimation_single_ninapro 覆盖结果" MODIFIED="1761473167586" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Estimation" />
+    <SUITE FILE_PATH="coverage/SemgCreate2$eval_jointwise_models__1_.coverage" NAME="eval_jointwise_models (1) 覆盖结果" MODIFIED="1761473208659" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Estimation" />
   </component>
 </project>

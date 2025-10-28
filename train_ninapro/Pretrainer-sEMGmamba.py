@@ -41,7 +41,7 @@ def main():
     parser.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
     parser.add_argument('--normalization', type=str, default='miu')
     parser.add_argument('--miu', type=int, default=2 ** 20)
-    parser.add_argument('--save_dir', type=str, default='../result/checkpoints_pretrain')
+    parser.add_argument('--save_dir', type=str, default='../result/ninapro/checkpoints_pretrain/checkpoints_pretrain')
     args = parser.parse_args()
 
     seed_everything(525)
@@ -124,7 +124,7 @@ def main():
         print(f"[Epoch {epoch:03d}] Train={avg_train:.5f}  Val={avg_val:.5f}  "
               f"NRMSE={nrmse:.4f}  CC={cc:.4f}  R²={r2:.4f}")
 
-        writer.add_scalar('Loss/train', avg_train, epoch)
+        writer.add_scalar('Loss/train_ninapro', avg_train, epoch)
         writer.add_scalar('Loss/val', avg_val, epoch)
         writer.add_scalar('Metrics/NRMSE', nrmse, epoch)
         writer.add_scalar('Metrics/CC', cc, epoch)

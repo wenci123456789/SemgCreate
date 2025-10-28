@@ -122,7 +122,7 @@ def run_inference_without_finetuning(args, device, target_id: str):
 def main():
     ap = argparse.ArgumentParser(description="Inference without fine-tuning")
     ap.add_argument('--data_root', type=str, default='../../../feature/ninapro_db2_trans')
-    ap.add_argument('--pretrained', type=str, default='../result/checkpoints_pretrain/model_best.pth')
+    ap.add_argument('--pretrained', type=str, default='../result/ninapro/checkpoints_pretrain/sEMGMamba/model_best.pth')
     ap.add_argument('--targets', nargs='+', default=[f"S{i}" for i in range(31, 41)])
     ap.add_argument('--batch_size', type=int, default=64)
     ap.add_argument('--subframe', type=int, default=200)

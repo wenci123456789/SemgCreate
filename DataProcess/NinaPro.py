@@ -88,7 +88,7 @@ class NinaPro(data.Dataset):
     def __repr__(self):
         fmt_str = 'Dataset ' + self.__class__.__name__ + '\n'
         fmt_str += '    Number of datapoints: {}\n'.format(self.__len__())
-        tmp = 'train'
+        tmp = 'train_ninapro'
         fmt_str += '    Split: {}\n'.format(tmp)
 
 

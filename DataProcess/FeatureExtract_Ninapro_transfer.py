@@ -34,7 +34,7 @@ def export_one(mat_path, save_dir=SAVE_DIR):
             return np.zeros((0, emg_raw.shape[1])), np.zeros((0, glove_raw.shape[1]))
         return np.concatenate(emgs, axis=0), np.concatenate(gloves, axis=0)
 
-    # 前5次→train，第6次→val
+    # 前5次→train_ninapro，第6次→val
     emg_tr, glove_tr = slice_by_rep(REPS_CALIB)
     emg_va, glove_va = slice_by_rep({REP_VAL})
 
@@ -51,7 +51,7 @@ def export_one(mat_path, save_dir=SAVE_DIR):
         w_va = emg_va.shape[0] - feat_va.shape[0] + 1
         glove_va = glove_va[:-w_va+1] if glove_va.shape[0] >= w_va else glove_va[:0]
 
-    # 按你现有保存格式输出 *_rms_{train|test}.h5 和 *_glove_{train|test}.h5
+    # 按你现有保存格式输出 *_rms_{train_ninapro|test}.h5 和 *_glove_{train_ninapro|test}.h5
     ex.save(feat_tr, savedir=save_dir, suffix="rms_train")
     ex.save(feat_va, savedir=save_dir, suffix="rms_test")   # 这里把“验证”写在 _test，方便直接被 Trainer 使用
     ex.save(glove_tr, savedir=save_dir, suffix="glove_train")

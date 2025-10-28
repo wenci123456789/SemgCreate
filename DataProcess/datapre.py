@@ -78,7 +78,7 @@ for j in range(3):
     session_id=j+1
     for i in range(16):
         subject_id = i + 10
-        folder_path="D:/SEEDS/alldata/rawdata/train/"
+        folder_path="D:/SEEDS/alldata/rawdata/train_ninapro/"
         save_path = r'D:/SEEDS/alldata/rawdata/S'+str(subject_id)+'_S' + str(session_id) + '_EA_train.mat' # 替换为保存路径
 
         process_and_concat(folder_path, subject_id, session_id,save_path)

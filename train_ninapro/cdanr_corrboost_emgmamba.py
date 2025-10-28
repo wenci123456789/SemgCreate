@@ -2,28 +2,32 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-CDAN-R + CorrBoost for cross-subject sEMG regression on NinaPro DB2
--------------------------------------------------------------------
-- Backbone: EMGMambaAdapter (frozen except adapter + head)
-- Task loss: MSE + λ_corr * CorrBoost (1-ρ + z-loss)
-- Alignment: Regression-Conditional Adversarial (CDAN-R):
-    * Domain discriminator takes outer-product f ⊗ y_code (y for source, y_hat for target).
-    * Gradient Reversal drives target features toward source conditional manifold.
-- (Optional) Extra alignment: KcMMD or OT can be enabled, but off by default.
-- Best checkpoint selection by CC (default).
+CDAN-R++ (EMGMambaAdapter) for NinaPro DB2
+------------------------------------------
+On top of CDAN-R + CorrBoost, this version adds:
+1) CorrBoost warmup: λ_corr linearly ramps up to target value (improves stability & CC).
+2) R1 gradient penalty on the domain discriminator (stabilizes D, reduces overfitting).
+3) Mild train_ninapro-time augmentation (Gaussian jitter + channel drop) to improve generalization.
+4) Test-Time Augmentation (TTA): average predictions over N noisy passes to boost CC.
+5) CC-based checkpointing (unchanged).
 
 Usage (example):
-    python cdanr_corrboost_emgmamba.py \
+    python cdanr_corrboost_emgmamba_plus.py \
         --data_root ../../../feature/ninapro_db2_trans \
         --pretrained ../result/checkpoints_pretrain/model_best.pth \
         --targets S31 S32 S33 S34 S35 S36 S37 S38 S39 S40 \
         --source_subjects S1 S2 ... S30 \
         --epochs 60 --batch_size 64 --lr 1e-3 \
-        --lambda-adv 0.5 --lambda-corr 0.5 \
-        --select_metric cc --use_ema --sched cosine --tensorboard
+        --lambda-adv 0.5 --lambda-corr 0.6 \
+        --corr-warmup-epochs 10 \
+        --r1-gamma 1.0 \
+        --tta --tta-times 8 --tta-noise-std 0.015 \
+        --use_ema --sched cosine --warmup_epochs 3 \
+        --select_metric cc --tensorboard
 
 Notes:
-- This script mirrors your IO/metrics style so results are directly comparable to finetune_ft.py & atl_calibrate_emgmamba.py.
+- This is drop-in compatible with your project structure (DataProcess, EMGMambaAttentionAdapter, compute_metrics_numpy).
+- Only adapter + output head are trainable, like your FT/ATL/COAST baselines.
 """
 import os, math, argparse, random
 from typing import List, Optional
@@ -48,7 +52,6 @@ def l2n(z: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
     return z / (z.norm(dim=-1, keepdim=True) + eps)
 
 def pearson_corr(y_hat: torch.Tensor, y: torch.Tensor, eps: float = 1e-8) -> torch.Tensor:
-    # returns mean channel-wise Pearson ρ in [-1,1]
     if y_hat.dim() == 3 and y_hat.size(1) == 1: y_hat = y_hat.squeeze(1)
     if y.dim() == 3 and y.size(1) == 1: y = y.squeeze(1)
     y_hat = y_hat - y_hat.mean(dim=0, keepdim=True)
@@ -59,10 +62,7 @@ def pearson_corr(y_hat: torch.Tensor, y: torch.Tensor, eps: float = 1e-8) -> tor
     return rho.mean()
 
 def corrboost_loss(y_hat: torch.Tensor, y: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
-    """
-    CorrBoost = (1 - ρ) + ζ * (−z(ρ)), where z(ρ)=atanh(ρ) is Fisher z-transform.
-    Minimizing this strongly pushes ρ→1 while keeping gradients meaningful near high ρ.
-    """
+    """CorrBoost = (1 - ρ) + 0.25*(-atanh(ρ))"""
     if y_hat.dim() == 3 and y_hat.size(1) == 1: y_hat = y_hat.squeeze(1)
     if y.dim() == 3 and y.size(1) == 1: y = y.squeeze(1)
     y_hat_c = y_hat - y_hat.mean(dim=0, keepdim=True)
@@ -71,11 +71,9 @@ def corrboost_loss(y_hat: torch.Tensor, y: torch.Tensor, eps: float = 1e-6) -> t
     den = (y_hat_c.pow(2).sum(dim=0).sqrt() * y_c.pow(2).sum(dim=0).sqrt() + eps)
     rho = num / den  # [C]
     one_minus_rho = (1.0 - rho).mean()
-    # Safe clamp for z-transform
     rho_clamped = rho.clamp(-1 + 1e-4, 1 - 1e-4)
     z = 0.5 * torch.log((1 + rho_clamped) / (1 - rho_clamped))
     z_term = (-z).mean()
-    # ζ: relative weight inside CorrBoost; expose as arg if needed, fixed 0.25 works well
     return one_minus_rho + 0.25 * z_term
 
 class GRL(torch.autograd.Function):
@@ -89,6 +87,18 @@ class GRL(torch.autograd.Function):
 
 def grl(x, lambd: float):
     return GRL.apply(x, lambd)
+
+# --------------------- light augmentations ---------------------
+def aug_gaussian_jitter(x: torch.Tensor, std: float) -> torch.Tensor:
+    if std <= 0: return x
+    return x + torch.randn_like(x) * std
+
+def aug_channel_drop(x: torch.Tensor, p: float = 0.1) -> torch.Tensor:
+    # x: [B,T,C], randomly drops channels to zero (same mask across time)
+    if p <= 0: return x
+    B,T,C = x.shape
+    mask = (torch.rand(B, C, device=x.device) > p).float()  # 1 keep, 0 drop
+    return x * mask.unsqueeze(1)
 
 # --------------------- data ---------------------
 def build_loader(root: str, sid: str, subframe: int, normalization: str, mu: float,
@@ -146,8 +156,7 @@ class HookedModel(nn.Module):
 
         target_module = dict(self.model.named_modules())[self.head_name]
         def _hook(mod, inp, out):
-            # Detach to prevent gradients through backbone (we freeze it anyway)
-            self._feat = inp[0]
+            self._feat = inp[0]  # keep grad for adapters
         target_module.register_forward_hook(_hook)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -161,7 +170,7 @@ class HookedModel(nn.Module):
     def apply_head(self, f: torch.Tensor) -> torch.Tensor:
         return self.head(f)
 
-# --------------------- CDAN-R discriminator ---------------------
+# --------------------- CDAN-R discriminator with R1 ---------------------
 class CDANRDiscriminator(nn.Module):
     def __init__(self, f_dim: int, y_dim: int, hidden: int = 512, p: float = 0.2):
         super().__init__()
@@ -172,15 +181,18 @@ class CDANRDiscriminator(nn.Module):
             nn.Linear(hidden//2, 1)
         )
     def forward(self, f, y_code):
-        # f:[B,d], y_code:[B,c] -> outer product then flatten
         if f.dim() == 3 and f.size(1) == 1: f = f.squeeze(1)
         if y_code.dim() == 3 and y_code.size(1) == 1: y_code = y_code.squeeze(1)
         f = l2n(f); y_code = l2n(y_code)
         outer = torch.bmm(f.unsqueeze(2), y_code.unsqueeze(1))  # [B,d,c]
         return self.net(outer.view(f.size(0), -1)).squeeze(-1)
 
+def r1_penalty(d_out: torch.Tensor, inputs: torch.Tensor) -> torch.Tensor:
+    grads = torch.autograd.grad(outputs=d_out.sum(), inputs=inputs, create_graph=True, retain_graph=True, only_inputs=True)[0]
+    return (grads.pow(2).sum(dim=list(range(1, grads.dim())))).mean()
+
 # --------------------- training ---------------------
-def run_cdanr_for_target(args, device, target_subject: str, source_subjects: List[str]):
+def run_cdanrpp_for_target(args, device, target_subject: str, source_subjects: List[str]):
     # data
     T_loader, Te_loader = build_loader(args.data_root, target_subject, args.subframe, args.normalization, args.miu,
                                        args.batch_size, shuffle=True, drop_last=True)
@@ -196,7 +208,7 @@ def run_cdanr_for_target(args, device, target_subject: str, source_subjects: Lis
     nt_net = EMGMambaAdapter(input_dim=12, output_dim=10)
     nt_net.load_state_dict(ms_net.state_dict(), strict=False)
 
-    # freeze backbone; only adapter + output head train
+    # freeze backbone; only adapter + output head train_ninapro
     for p in nt_net.parameters(): p.requires_grad = False
     for name, p in nt_net.named_parameters():
         if ('adapter' in name) or ('output_proj' in name):
@@ -265,7 +277,7 @@ def run_cdanr_for_target(args, device, target_subject: str, source_subjects: Lis
 
     # logs
     os.makedirs(args.save_dir, exist_ok=True)
-    save_dir_one = os.path.join(args.save_dir, f"cdanr_{target_subject}")
+    save_dir_one = os.path.join(args.save_dir, f"cdanrpp_{target_subject}")
     os.makedirs(save_dir_one, exist_ok=True)
     writer = SummaryWriter(log_dir=os.path.join(save_dir_one, "tb")) if args.tensorboard else None
 
@@ -285,10 +297,11 @@ def run_cdanr_for_target(args, device, target_subject: str, source_subjects: Lis
         else: cur_lr_d = opt_d.param_groups[0]['lr']
 
         nt.train(); D.train()
-        total_reg, total_corr, total_adv, total_d = 0.0, 0.0, 0.0, 0.0
+        total_reg, total_corr, total_adv, total_d, total_r1 = 0.0, 0.0, 0.0, 0.0, 0.0
 
         lam_adv = args.lambda_adv * min(1.0, epoch / float(max(1, args.adv_warmup_epochs)))
-        lam_corr = args.lambda_corr
+        # Corr warmup: linearly ramp from 0 to target
+        lam_corr = args.lambda_corr * min(1.0, epoch / float(max(1, args.corr_warmup_epochs)))
 
         for (xb_t, yb_t, *_) in T_loader:
             # fetch target & source batches
@@ -302,49 +315,58 @@ def run_cdanr_for_target(args, device, target_subject: str, source_subjects: Lis
             xb_s = xb_s.squeeze(3).to(device)
             yb_s = yb_s.to(device).float().view(yb_s.size(0), -1)
 
-            # ----------------- D step -----------------
-            with torch.no_grad():
-                _, f_s = ms.forward_with_features(xb_s)
-                if f_s.dim() == 3 and f_s.size(1) == 1: f_s = f_s.squeeze(1)
-                # student path (no grad for G when updating D)
-                _, f_t = nt.forward_with_features(xb_t)
-                if f_t.dim() == 3 and f_t.size(1) == 1: f_t = f_t.squeeze(1)
-                # use current head on student features to form conditional code
-                y_hat_t = nt.apply_head(f_t)
-                if y_hat_t.dim() == 3 and y_hat_t.size(1) == 1: y_hat_t = y_hat_t.squeeze(1)
+            # light augmentation on target batch
+            if args.train_noise_std > 0 or args.train_drop_ch > 0:
+                xb_t = aug_gaussian_jitter(xb_t, args.train_noise_std)
+                xb_t = aug_channel_drop(xb_t, args.train_drop_ch)
 
+            # ----------------- D step with R1 -----------------
+            for p in D.parameters(): p.requires_grad = True
+            # source path
+            ms.zero_grad(set_to_none=True); nt.zero_grad(set_to_none=True); D.zero_grad(set_to_none=True)
+            _, f_s = ms.forward_with_features(xb_s)
+            if f_s.dim() == 3 and f_s.size(1) == 1: f_s = f_s.squeeze(1)
+            f_s.requires_grad_(True)
             logit_s = D(f_s, yb_s)
-            logit_t = D(f_t, y_hat_t)
+            # target path
+            _, f_t = nt.forward_with_features(xb_t)
+            if f_t.dim() == 3 and f_t.size(1) == 1: f_t = f_t.squeeze(1)
+            with torch.no_grad():
+                y_hat_t_cur = nt.apply_head(f_t.detach() if f_t.grad_fn is not None else f_t)
+                if y_hat_t_cur.dim() == 3 and y_hat_t_cur.size(1) == 1: y_hat_t_cur = y_hat_t_cur.squeeze(1)
+            f_t_detached = f_t.detach().requires_grad_(True)
+            logit_t = D(f_t_detached, y_hat_t_cur.detach())
             bce_logits = nn.BCEWithLogitsLoss()
-            loss_d = bce_logits(logit_s, torch.ones_like(logit_s)) + \
-                     bce_logits(logit_t, torch.zeros_like(logit_t))
-            opt_d.zero_grad(set_to_none=True)
-            loss_d.backward()
-            opt_d.step()
+            loss_d = bce_logits(logit_s, torch.ones_like(logit_s)) + bce_logits(logit_t, torch.zeros_like(logit_t))
 
-            total_d += float(loss_d.item())
+            # R1 gradient penalty
+            gp_s = r1_penalty(logit_s, f_s)
+            gp_t = r1_penalty(logit_t, f_t_detached)
+            loss_d_total = loss_d + 0.5 * args.r1_gamma * (gp_s + gp_t)
+
+            loss_d_total.backward()
+            opt_d.step()
+            total_d += float(loss_d.item()); total_r1 += float((0.5 * args.r1_gamma * (gp_s + gp_t)).item())
 
             # ----------------- G (student) step -----------------
             for p in D.parameters(): p.requires_grad = False  # freeze D for G step
-
-            # forward again for gradients (no detach)
             _, f_t = nt.forward_with_features(xb_t)
             if f_t.dim() == 3 and f_t.size(1) == 1: f_t = f_t.squeeze(1)
             y_hat_t = nt.apply_head(f_t)
             if y_hat_t.dim() == 3 and y_hat_t.size(1) == 1: y_hat_t = y_hat_t.squeeze(1)
 
-            # task: MSE + corrboost
+            # task: MSE + CorrBoost (with warmup)
             L_mse = reg_loss(y_hat_t, yb_t)
             L_corr = corrboost_loss(y_hat_t, yb_t)
             L_task = L_mse + lam_corr * L_corr
 
-            # adversarial via GRL on both domains
+            # adversarial via GRL on both domains (source frozen)
             logit_s_g = D(grl(f_s.detach(), lam_adv), yb_s.detach())
             logit_t_g = D(grl(f_t, lam_adv), y_hat_t.detach())
             L_adv = bce_logits(logit_s_g, torch.ones_like(logit_s_g)) + \
                     bce_logits(logit_t_g, torch.zeros_like(logit_t_g))
 
-            L = L_task + L_adv  # L_adv already scaled by GRL(λ)
+            L = L_task + L_adv  # L_adv scaled by GRL
 
             opt_g.zero_grad(set_to_none=True)
             L.backward()
@@ -356,8 +378,6 @@ def run_cdanr_for_target(args, device, target_subject: str, source_subjects: Lis
             total_corr += float(L_corr.item())
             total_adv += float(L_adv.item())
 
-            for p in D.parameters(): p.requires_grad = True  # unfreeze
-
         # ----- validation -----
         nt.eval()
         if ema is not None: ema.apply()
@@ -367,10 +387,23 @@ def run_cdanr_for_target(args, device, target_subject: str, source_subjects: Lis
             for xb, yb, *_ in Te_loader:
                 xb = xb.squeeze(3).to(device)
                 yb = yb.to(device).float().view(yb.size(0), -1)
-                _, f = nt.forward_with_features(xb)
-                if f.dim() == 3 and f.size(1) == 1: f = f.squeeze(1)
-                y_hat = nt.apply_head(f)
-                if y_hat.dim() == 3 and y_hat.size(1) == 1: y_hat = y_hat.squeeze(1)
+                # TTA
+                if args.tta:
+                    yh_sum = 0.0
+                    for _ in range(args.tta_times):
+                        xb_aug = aug_gaussian_jitter(xb, args.tta_noise_std) if args.tta_noise_std > 0 else xb
+                        _, f = nt.forward_with_features(xb_aug)
+                        if f.dim() == 3 and f.size(1) == 1: f = f.squeeze(1)
+                        yh = nt.apply_head(f)
+                        if yh.dim() == 3 and yh.size(1) == 1: yh = yh.squeeze(1)
+                        yh_sum = yh_sum + yh
+                    y_hat = yh_sum / float(args.tta_times)
+                else:
+                    _, f = nt.forward_with_features(xb)
+                    if f.dim() == 3 and f.size(1) == 1: f = f.squeeze(1)
+                    y_hat = nt.apply_head(f)
+                    if y_hat.dim() == 3 and y_hat.size(1) == 1: y_hat = y_hat.squeeze(1)
+
                 val_mse += reg_loss(y_hat, yb).item()
                 preds_cpu.append(y_hat.detach().cpu()); targets_cpu.append(yb.detach().cpu())
             val_mse /= len(Te_loader)
@@ -391,18 +424,19 @@ def run_cdanr_for_target(args, device, target_subject: str, source_subjects: Lis
             writer.add_scalar("loss/train_corr", total_corr/len(T_loader), epoch)
             writer.add_scalar("loss/train_adv", total_adv/len(T_loader), epoch)
             writer.add_scalar("loss/train_D", total_d/len(T_loader), epoch)
+            writer.add_scalar("loss/train_R1", total_r1/len(T_loader), epoch)
             writer.add_scalar("loss/val_mse", val_mse, epoch)
             writer.add_scalar("metrics/NRMSE", NRMSE, epoch)
             writer.add_scalar("metrics/CC", CC, epoch)
             writer.add_scalar("metrics/R2", R2, epoch)
             writer.flush()
 
-        print(f"[CDAN-R {target_subject}] Epoch {epoch:03d}  "
+        print(f"[CDAN-R++ {target_subject}] Epoch {epoch:03d}  "
               f"LRg={cur_lr_g:.2e} LRd={cur_lr_d:.2e}  "
               f"train_mse={total_reg/len(T_loader):.6f}  train_corr={total_corr/len(T_loader):.6f}  "
-              f"train_adv={total_adv/len(T_loader):.6f}  train_D={total_d/len(T_loader):.6f}  "
+              f"train_adv={total_adv/len(T_loader):.6f}  train_D={total_d/len(T_loader):.6f}  train_R1={total_r1/len(T_loader):.6f}  "
               f"Val(MSE)={val_mse:.6f}  NRMSE={NRMSE:.4f}  CC={CC:.4f}  R2={R2:.4f}  "
-              f"lam_adv={lam_adv:.3f}  lam_corr={lam_corr:.3f}")
+              f"lam_adv={lam_adv:.3f}  lam_corr={lam_corr:.3f}  TTA={int(args.tta)}x{args.tta_times}@{args.tta_noise_std}")
 
         # save best — by user-selected metric (default: cc)
         if args.select_metric == 'mse':
@@ -417,27 +451,27 @@ def run_cdanr_for_target(args, device, target_subject: str, source_subjects: Lis
             cur_score = val_mse; is_better = cur_score < best_score
 
         torch.save({'epoch': epoch, 'model_state': nt_net.state_dict()},
-                   os.path.join(save_dir_one, 'cdanr_latest.pth'))
+                   os.path.join(save_dir_one, 'cdanrpp_latest.pth'))
         if is_better and not (isinstance(cur_score, float) and (math.isnan(cur_score) or math.isinf(cur_score))):
             best_score = cur_score
             torch.save({'epoch': epoch, 'model_state': nt_net.state_dict()},
-                       os.path.join(save_dir_one, 'cdanr_best.pth'))
+                       os.path.join(save_dir_one, 'cdanrpp_best.pth'))
 
     if writer is not None: writer.close()
 
 
 def main():
-    ap = argparse.ArgumentParser(description="CDAN-R + CorrBoost (EMGMambaAdapter) for NinaPro DB2 cross-subject regression")
+    ap = argparse.ArgumentParser(description="CDAN-R++ (EMGMambaAdapter) for NinaPro DB2 cross-subject regression")
     # data
     ap.add_argument('--data_root', type=str, default='../../../feature/ninapro_db2_trans')
-    ap.add_argument('--pretrained', type=str, default='../result/checkpoints_pretrain/model_best.pth')
+    ap.add_argument('--pretrained', type=str, default='../result/ninapro/checkpoints_pretrain/sEMGMamba/model_best.pth')
     ap.add_argument('--targets', nargs='+', default=[f"S{i}" for i in range(31, 41)])
     ap.add_argument('--source_subjects', nargs='+', default=[f"S{i}" for i in range(1, 31)])
     ap.add_argument('--subframe', type=int, default=200)
     ap.add_argument('--normalization', type=str, default='miu')
     ap.add_argument('--miu', type=float, default=2 ** 20)
 
-    # train
+    # train_ninapro
     ap.add_argument('--epochs', type=int, default=60)
     ap.add_argument('--batch_size', type=int, default=64)
     ap.add_argument('--lr', type=float, default=1e-3)
@@ -446,13 +480,14 @@ def main():
     ap.add_argument('--sched', type=str, default='cosine', choices=['none','cosine'])
     ap.add_argument('--warmup_epochs', type=int, default=3)
     ap.add_argument('--tensorboard', action='store_true')
-    ap.add_argument('--save_dir', type=str, default='../result/check/checkpoints_cdanr')
+    ap.add_argument('--save_dir', type=str, default='../result/ninapro/Estimation_result/sEMGMamba/checkpoints_cdanrpp')
     ap.add_argument('--head_name', type=str, default='output_proj')
 
     # losses
     ap.add_argument('--lambda_adv', type=float, default=0.5)
     ap.add_argument('--adv_warmup_epochs', type=int, default=5)
-    ap.add_argument('--lambda_corr', type=float, default=0.5)
+    ap.add_argument('--lambda_corr', type=float, default=0.6)
+    ap.add_argument('--corr_warmup_epochs', type=int, default=10)
 
     # EMA
     ap.add_argument('--use_ema', action='store_true')
@@ -460,6 +495,14 @@ def main():
 
     # discriminator
     ap.add_argument('--d_hidden', type=int, default=512)
+    ap.add_argument('--r1_gamma', type=float, default=1.0)
+
+    # TTA & train_ninapro-time aug
+    ap.add_argument('--tta', action='store_true')
+    ap.add_argument('--tta_times', type=int, default=8)
+    ap.add_argument('--tta_noise_std', type=float, default=0.015)
+    ap.add_argument('--train_noise_std', type=float, default=0.01)
+    ap.add_argument('--train_drop_ch', type=float, default=0.1)
 
     # selection metric
     ap.add_argument('--select_metric', type=str, default='cc', choices=['mse','nrmse','cc','r2'])
@@ -475,9 +518,9 @@ def main():
     print(f"Select metric: {args.select_metric}")
 
     for tgt in args.targets:
-        print(f"\n====== CDAN-R start: {tgt} ======")
-        run_cdanr_for_target(args, device, tgt, args.source_subjects)
-        print(f"====== CDAN-R done : {tgt} ======\n")
+        print(f"\n====== CDAN-R++ start: {tgt} ======")
+        run_cdanrpp_for_target(args, device, tgt, args.source_subjects)
+        print(f"====== CDAN-R++ done : {tgt} ======\n")
 
 if __name__ == '__main__':
     main()

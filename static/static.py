@@ -1,0 +1,1 @@
+rowData = '../../../feature/ninapro_db2_trans'

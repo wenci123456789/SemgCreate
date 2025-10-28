@@ -20,7 +20,6 @@ dummy_subject = torch.zeros(batch_size, dtype=torch.long, device=device)
 # 导入模型
 # -----------------------------
 from Model.EMGMambaAttention import EMGMambaAttenRegressor
-from SomeOtherModel import OtherModel1, OtherModel2  # 替换为你要比较的模型
 
 models_to_eval = {
     "EMGMambaAttnAdapt": EMGMambaAttenRegressor(num_subjects=2),
