@@ -25,34 +25,9 @@ from DataProcess import NinaPro
 from Model.EMGMambaAttentionAdapter import EMGMambaAdapter
 
 # Metrics (use the same utilities as in your training for consistency)
-try:
-    from utils.Methods.methods import pearson_CC, compute_metrics_numpy
-except Exception:
-    # Fallbacks if the utilities are not available at import-time
-    def pearson_CC(y_true, y_pred):
-        y_true = np.asarray(y_true)
-        y_pred = np.asarray(y_pred)
-        y_true = y_true - y_true.mean(axis=0, keepdims=True)
-        y_pred = y_pred - y_pred.mean(axis=0, keepdims=True)
-        num = (y_true * y_pred).sum(axis=0)
-        den = np.sqrt((y_true ** 2).sum(axis=0) * (y_pred ** 2).sum(axis=0) + 1e-12)
-        r = num / (den + 1e-12)
-        return float(np.nanmean(r))
-    def compute_metrics_numpy(y_true, y_pred):
-        from skimage import metrics as skimetrics
-        from sklearn.metrics import r2_score
-        y_true = np.asarray(y_true).reshape(-1, 10)
-        y_pred = np.asarray(y_pred).reshape(-1, 10)
-        NRMSE = float(skimetrics.normalized_root_mse(y_true, y_pred, normalization="min-max"))
-        CC = float(pearson_CC(y_true, y_pred))
-        R2 = float(r2_score(y_true.T, y_pred.T, multioutput="variance_weighted"))
-        return NRMSE, CC, R2
+from utils.Methods.methods import pearson_CC, compute_metrics_numpy
 
-# Optional smoothing
-try:
-    from scipy.signal import savgol_filter
-except Exception:
-    savgol_filter = None
+
 
 
 def load_state_flex(ckpt_path: str):
@@ -204,14 +179,6 @@ def main():
 
             # Inference
             y_hat, y_true = forward_all(model, loader, device)
-
-            # Optional smoothing
-            if args.savgol_window and args.savgol_window > 0 and savgol_filter is not None:
-                win = int(args.savgol_window) if args.savgol_window % 2 == 1 else int(args.savgol_window + 1)
-                try:
-                    y_hat = savgol_filter(y_hat, window_length=win, polyorder=args.savgol_poly, axis=0, mode='interp')
-                except Exception as e:
-                    print(f"[Warn] savgol_filter failed ({e}), continue without smoothing.")
 
             # Per-joint metrics
             jw = jointwise_metrics(y_true, y_hat)

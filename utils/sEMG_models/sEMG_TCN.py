@@ -7,7 +7,7 @@ class sEMG_TCN(nn.Module):
         super(sEMG_TCN, self).__init__()
         self.name = "TCN"
         self.tcn = TemporalConvNet(num_inputs, num_channels, kernel_size=kernel_size, dropout=dropout)
-        self.fc = nn.Linear(200 * 5, 10)
+        self.fc = nn.Linear(200 * 10, 10)
 
     def forward(self, x):
         x = x.view(x.size(0), x.size(1), x.size(2))
@@ -21,4 +21,4 @@ class sEMG_TCN(nn.Module):
         output = output.view(x.size(0), -1)
         output = self.fc(output)
         output = output.reshape([x.size(0), 1, 10])
-        return output,x
+        return output

@@ -3,7 +3,7 @@ from torch.autograd import Variable
 import torch
 from torch.nn import functional as F
 
-from model.DepthwiseSeparableConv import DepthwiseSeparableConv
+from utils.sEMG_models.Component.DepthwiseSeparableConv import DepthwiseSeparableConv
 
 
 class ConvLSTMCell(nn.Module):
@@ -36,11 +36,11 @@ class ConvLSTMCell(nn.Module):
         self.padding = kernel_size[0] // 2, kernel_size[1] // 2
         self.bias = bias
         self.Dscv=DepthwiseSeparableConv(in_channels=self.input_dim + self.hidden_dim, out_channels=4 * self.hidden_dim)
-        # self.conv = nn.Conv2d(in_channels=self.input_dim + self.hidden_dim,
-        #                       out_channels=4 * self.hidden_dim,
-        #                       kernel_size=self.kernel_size,
-        #                       padding=self.padding,
-        #                       bias=self.bias)
+        self.conv = nn.Conv2d(in_channels=self.input_dim + self.hidden_dim,
+                              out_channels=4 * self.hidden_dim,
+                              kernel_size=self.kernel_size,
+                              padding=self.padding,
+                              bias=self.bias)
 
     def forward(self, input_tensor, cur_state):
         h_cur, c_cur = cur_state
