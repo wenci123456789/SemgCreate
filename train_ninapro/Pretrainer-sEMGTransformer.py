@@ -13,9 +13,11 @@ from torch.utils.data import DataLoader, ConcatDataset
 from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.tensorboard import SummaryWriter
 from DataProcess import NinaPro
-from Model.EMGMambaAttentionAdapter import EMGMambaAdapter
 from sklearn import metrics as skmetrics
 from skimage import metrics
+
+from utils.sEMG_models.sEMG_TCN import sEMG_TCN
+
 
 # reproducibility
 def seed_everything(seed=525):
@@ -41,7 +43,7 @@ def main():
     parser.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
     parser.add_argument('--normalization', type=str, default='miu')
     parser.add_argument('--miu', type=int, default=2 ** 20)
-    parser.add_argument('--save_dir', type=str, default='../result/ninapro/checkpoints_pretrain/checkpoints_pretrain')
+    parser.add_argument('--save_dir', type=str, default='../result/ninapro/checkpoints_pretrain/TCN')
     args = parser.parse_args()
 
     seed_everything(525)
@@ -76,10 +78,10 @@ def main():
 
     # ============ 模型与优化 ============
     device = args.device
-    model = EMGMambaAdapter(input_dim=12, output_dim=10).to(device)
+    model = sEMG_TCN(12, [128, 128, 128, 128, 10], 3, 0.7).to(device)
     reg_loss = nn.MSELoss()
     optimizer = optim.AdamW(model.parameters(), lr=args.lr)
-    scheduler = MultiStepLR(optimizer, milestones=[100], gamma=0.5)
+    scheduler = MultiStepLR(optimizer, milestones=[200], gamma=0.5)
 
     best_nrmse = math.inf
 
@@ -91,6 +93,7 @@ def main():
             y = y.to(device)                  # [B,1,10]
             optimizer.zero_grad()
             pred = model(x)
+            pred = pred.mean(dim=1, keepdim=True)
             loss = reg_loss(pred, y)
             loss.backward(); optimizer.step()
             train_loss += loss.item()
@@ -104,17 +107,12 @@ def main():
                 x = x.squeeze(3).to(device)
                 y = y.to(device)
                 pred = model(x)
+                pred = pred.mean(dim=1, keepdim=True)
                 val_loss += reg_loss(pred, y).item()
                 preds.append(pred.cpu().numpy())
                 trues.append(y.cpu().numpy())
-        preds, trues = np.concatenate(preds, axis=0), np.concatenate(trues, axis=0)
-        if preds.ndim == 3 and preds.shape[1] == 1:
-            preds = preds[:, 0, :]
-            trues = trues[:, 0, :]
-        else:
-            # 保险：若还有更高维，按 [N, -1] 展平到二维
-            preds = preds.reshape(preds.shape[0], -1)
-            trues = trues.reshape(trues.shape[0], -1)
+        preds = np.concatenate(preds, axis=0)[:, 0, :]
+        trues = np.concatenate(trues, axis=0)[:, 0, :]  # [N, 10]
         nrmse = metrics.normalized_root_mse(trues, preds)
         cc = pearson_CC(trues, preds)
         r2 = skmetrics.r2_score(trues, preds)

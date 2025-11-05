@@ -38,8 +38,13 @@ class sEMG_BERT(nn.Module):
 
 
 if __name__ == "__main__":
-    sim_batch = torch.rand([1, 200, 12]).long().cuda()
-    model = sEMG_BERT(200, hidden=12).cuda()
+    # 初始化时使用正确的输入维度和词汇表大小
+    sim_batch = torch.rand([1, 200, 12]).float().cuda()  # 使用 float 类型
+    vocab_size = 2400  # 这是你预训练模型的 vocab_size
+    input_dim = 12  # 这是你预训练模型的输入维度
+
+    # 确保模型初始化时，vocab_size 和 input_dim 正确
+    model = sEMG_BERT(vocab_size=vocab_size, hidden=12, input_dim=input_dim).cuda()
     print(sim_batch.shape)
     output = model(sim_batch)
     print(output.shape)

@@ -37,7 +37,7 @@ def main():
     parser.add_argument('--subjects', nargs='+', default=[f"S{i}" for i in range(1, 31)])
     parser.add_argument('--data_root', type=str, default='../../../feature/ninapro_db2_trans')
     parser.add_argument('--epoch', type=int, default=200)
-    parser.add_argument('--lr', type=float, default=1e-4)
+    parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--subframe', type=int, default=200)
     parser.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
@@ -81,7 +81,7 @@ def main():
     model = sEMG_TCN(12, [128, 128, 128, 128, 10], 3, 0.7).to(device)
     reg_loss = nn.MSELoss()
     optimizer = optim.AdamW(model.parameters(), lr=args.lr)
-    scheduler = MultiStepLR(optimizer, milestones=[200], gamma=0.5)
+    scheduler = MultiStepLR(optimizer, milestones=[100], gamma=0.5)
 
     best_nrmse = math.inf
 

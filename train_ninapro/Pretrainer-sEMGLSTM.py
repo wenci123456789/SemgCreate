@@ -16,7 +16,7 @@ from DataProcess import NinaPro
 from sklearn import metrics as skmetrics
 from skimage import metrics
 
-from utils.sEMG_models.sEMG_TCN import sEMG_TCN
+from utils.sEMG_models.sEMG_LSTM import sEMG_LSTM
 
 
 # reproducibility
@@ -36,8 +36,8 @@ def main():
     parser = argparse.ArgumentParser(description='Pretrain Multi-s-net on S1–S30')
     parser.add_argument('--subjects', nargs='+', default=[f"S{i}" for i in range(1, 31)])
     parser.add_argument('--data_root', type=str, default='../../../feature/ninapro_db2_trans')
-    parser.add_argument('--epoch', type=int, default=200)
-    parser.add_argument('--lr', type=float, default=1e-4)
+    parser.add_argument('--epoch', type=int, default=400)
+    parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--subframe', type=int, default=200)
     parser.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
@@ -78,21 +78,24 @@ def main():
 
     # ============ 模型与优化 ============
     device = args.device
-    model = sEMG_TCN(12, [128, 128, 128, 128, 10], 3, 0.7).to(device)
+    model = model = sEMG_LSTM(vocab_size=200, hidden=128, n_layers=4).to(device)
     reg_loss = nn.MSELoss()
     optimizer = optim.AdamW(model.parameters(), lr=args.lr)
-    scheduler = MultiStepLR(optimizer, milestones=[200], gamma=0.5)
+    scheduler = MultiStepLR(optimizer, milestones=[100,200], gamma=0.5)
 
     best_nrmse = math.inf
-
+    hidden = None
     # ============ 训练循环 ============
     for epoch in range(1, args.epoch + 1):
         model.train(); train_loss = 0.0
         for x, y, *_ in TrainLoader:
-            x = x.squeeze(3).to(device)       # [B,200,12]
-            y = y.to(device)                  # [B,1,10]
-            optimizer.zero_grad()
-            pred = model(x)
+            x = x.to(device).float()
+            y = y.to(device, non_blocking=True).float()
+            pred,hidden = model(x)
+            if isinstance(hidden, (tuple, list)):  # LSTM: (h_n, c_n)
+                hidden = tuple(h.detach() for h in hidden)
+            else:
+                hidden = hidden.detach()
             pred = pred.mean(dim=1, keepdim=True)
             loss = reg_loss(pred, y)
             loss.backward(); optimizer.step()
@@ -103,10 +106,17 @@ def main():
         model.eval(); val_loss = 0.0
         preds, trues = [], []
         with torch.no_grad():
+            hidden_1 = None
             for x, y, *_ in ValLoader:
-                x = x.squeeze(3).to(device)
-                y = y.to(device)
-                pred = model(x)
+                x = x.to(device).float()
+                # 期望 [B,h,w,c] = [B,12,200,1]
+                if x.dim() == 4 and x.size(-1) == 1:  # [B,200,12,1] -> [B,12,200,1]
+                    x = x.permute(0, 1,2, 3).contiguous()
+                elif x.dim() == 3:  # [B,200,12]   -> [B,12,200,1]
+                    x = x.permute(0, 1, 2).unsqueeze(-1).contiguous()
+                y = y.to(device, non_blocking=True).float()
+                pred,hidden_1 = model(x)
+                hidden_1 = None
                 pred = pred.mean(dim=1, keepdim=True)
                 val_loss += reg_loss(pred, y).item()
                 preds.append(pred.cpu().numpy())
@@ -135,7 +145,7 @@ def main():
             best_nrmse = nrmse
             torch.save(state, os.path.join(args.save_dir, 'model_best.pth'))
 
-    print("✅ Pretraining finished. Best NRMSE:", best_nrmse)
+    print("✅ Pretraining finished.  Best NRMSE:", best_nrmse)
 
 if __name__ == '__main__':
     main()
