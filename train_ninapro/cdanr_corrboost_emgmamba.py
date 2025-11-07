@@ -472,7 +472,7 @@ def main():
     ap.add_argument('--miu', type=float, default=2 ** 20)
 
     # train_ninapro
-    ap.add_argument('--epochs', type=int, default=60)
+    ap.add_argument('--epochs', type=int, default=50 )
     ap.add_argument('--batch_size', type=int, default=64)
     ap.add_argument('--lr', type=float, default=1e-3)
     ap.add_argument('--lr_d', type=float, default=1e-3)
@@ -508,7 +508,7 @@ def main():
     ap.add_argument('--select_metric', type=str, default='cc', choices=['mse','nrmse','cc','r2'])
 
     args = ap.parse_args()
-    set_seed(2025)
+    set_seed(525)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     print(f"Pretrained: {args.pretrained}")

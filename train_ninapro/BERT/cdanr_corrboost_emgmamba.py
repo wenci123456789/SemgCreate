@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-CDAN-R++ for NinaPro DB2 (BERT backbone)
-- CorrBoost + R1 penalty + 轻量噪声/通道丢失增强 + 可选 TTA + EMA
+CDAN-R++ for NinaPro DB2 (calibration-style, BERT backbone)
+- Follow finetune_ft.py: infer BERT hyperparams from checkpoint, freeze backbone, train only 'fc'
+- Keep CDAN-R++ (CorrBoost + R1 + aug + optional EMA/TTA) intact
 """
-
 import os, math, argparse, random
 from typing import List, Optional
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -15,12 +16,13 @@ from torch.utils.tensorboard import SummaryWriter
 
 from DataProcess import NinaPro
 from utils.Methods.methods import compute_metrics_numpy
-from utils.sEMG_models.sEMG_BERT import sEMG_BERT  # ← BERT
+from utils.sEMG_models.sEMG_BERT import sEMG_BERT
 
 # ---- utils ----
 def set_seed(seed: int = 2025):
     import numpy as np
     random.seed(seed); torch.manual_seed(seed); torch.cuda.manual_seed_all(seed); np.random.seed(seed)
+
 def l2n(z, eps=1e-6): return z / (z.norm(dim=-1, keepdim=True) + eps)
 
 def pearson_corr(y_hat, y, eps: float = 1e-8):
@@ -84,7 +86,6 @@ class HookedModel(nn.Module):
         self._feat: Optional[torch.Tensor] = None
         target = dict(self.model.named_modules()).get(head_name, None)
         if target is None:
-            # fallback：找最后一个 Linear
             for n, m in self.model.named_modules():
                 if isinstance(m, nn.Linear): target = m; head_name = n
         if target is None: raise RuntimeError("找不到输出头 Linear")
@@ -94,7 +95,7 @@ class HookedModel(nn.Module):
         self.head = target; self.head_name = head_name
 
     def forward_with_features(self, x):
-        out = self.model(x)                 # (output, distr)
+        out = self.model(x)
         y = out[0] if isinstance(out, (tuple, list)) else out
         return y, self._feat
 
@@ -122,27 +123,33 @@ def r1_penalty(d_out: torch.Tensor, inputs: torch.Tensor) -> torch.Tensor:
     grads = torch.autograd.grad(outputs=d_out.sum(), inputs=inputs, create_graph=True, retain_graph=True, only_inputs=True)[0]
     return (grads.pow(2).sum(dim=list(range(1, grads.dim())))).mean()
 
-# ---- train ----
+# ---- main training ----
 def run_cdanrpp_for_target(args, device, target_subject: str, source_subjects: List[str]):
     # data
     T_loader, Te_loader = build_loader(args.data_root, target_subject, args.subframe, args.normalization, args.miu,
                                        args.batch_size, shuffle=True, drop_last=True)
     S_loader = build_source_loader(args.data_root, source_subjects, args.subframe, args.normalization, args.miu, args.batch_size)
 
-    # teacher (冻结) & student
-    ms_net = sEMG_BERT(vocab_size=args.subframe, input_dim=12)
-    ckpt = torch.load(args.pretrained, map_location='cpu'); ckpt = ckpt.get('model_state', ckpt)
-    ms_net.load_state_dict(ckpt, strict=False)
+    # ===== Load checkpoint & infer BERT hyperparams like finetune_ft.py =====
+    if not os.path.exists(args.pretrained):
+        raise FileNotFoundError(f"Pretrained ckpt not found: {args.pretrained}")
+    ckpt = torch.load(args.pretrained, map_location='cpu')
+    state = ckpt.get('model_state', ckpt)
+    pos = state.get('bert.embedding.position.position_embedding', None)
+    if pos is None:
+        raise RuntimeError("Checkpoint 缺少 position embedding，无法推断超参。")
+    T_ckpt, hidden_ckpt = int(pos.shape[1]), int(pos.shape[2])
+
+    # teacher (frozen) & student (only 'fc' trainable)
+    ms_net = sEMG_BERT(vocab_size=T_ckpt, hidden=hidden_ckpt, feature_dim=1, n_layers=4, attn_heads=8).to(device)
+    ms_net.load_state_dict(state, strict=False)
     for p in ms_net.parameters(): p.requires_grad = False
 
-    nt_net = sEMG_BERT(vocab_size=args.subframe, input_dim=12)
+    nt_net = sEMG_BERT(vocab_size=T_ckpt, hidden=hidden_ckpt, feature_dim=1, n_layers=4, attn_heads=8).to(device)
     nt_net.load_state_dict(ms_net.state_dict(), strict=False)
-
-    # 只训练 fc（也可以放开部分 BERT 层微调）
     for p in nt_net.parameters(): p.requires_grad = False
     for name, p in nt_net.named_parameters():
-        if ('fc' in name):
-            p.requires_grad = True
+        if ('fc' in name): p.requires_grad = True
 
     ms = HookedModel(ms_net, head_name=args.head_name).to(device)
     nt = HookedModel(nt_net, head_name=args.head_name).to(device)
@@ -260,7 +267,7 @@ def run_cdanrpp_for_target(args, device, target_subject: str, source_subjects: L
             loss_d_total.backward(); opt_d.step()
             total_d += float(loss_d.item()); total_r1 += float((0.5*args.r1_gamma*(gp_s+gp_t)).item())
 
-            # G step
+            # G step (only fc params are trainable)
             for p in D.parameters(): p.requires_grad = False
             _, f_t = nt.forward_with_features(xb_t)
             if f_t.dim() == 3 and f_t.size(1) == 1: f_t = f_t.squeeze(1)
@@ -363,7 +370,7 @@ def run_cdanrpp_for_target(args, device, target_subject: str, source_subjects: L
     if writer is not None: writer.close()
 
 def main():
-    ap = argparse.ArgumentParser(description="CDAN-R++ (BERT backbone)")
+    ap = argparse.ArgumentParser(description="CDAN-R++ (calibration-style, BERT backbone)")
     # data
     ap.add_argument('--data_root', type=str, default='../../../../feature/ninapro_db2_trans')
     ap.add_argument('--pretrained', type=str, default='../../result/ninapro/checkpoints_pretrain/BERT/model_best.pth')

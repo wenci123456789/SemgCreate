@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
+"""
+ATL calibrate - BERT backbone (calibration-style)
+- Follow finetune_ft.py: infer T/hidden from checkpoint, freeze backbone, train only 'fc'
+"""
 import os, math, argparse, csv
 import torch, torch.nn as nn, torch.optim as optim
 from torch.utils.data import DataLoader, ConcatDataset
@@ -89,11 +92,11 @@ def run_atl_for_target(args, device, target_subject: str, source_subjects: list)
                           num_workers=0, pin_memory=False)
 
     # ===== 模型（Teacher: 冻结；Student: 拷贝）=====
-    ms_net = sEMG_BERT(vocab_size=args.subframe, input_dim=12)  # 12 通道 → 10 关节（模型里 fc 做 10）
+    ms_net = sEMG_BERT(vocab_size=args.subframe, hidden=128, feature_dim=1, n_layers=4, attn_heads=8).to(device)  # 12 通道 → 10 关节（模型里 fc 做 10）
     ms_net.load_state_dict(load_state_flex(args.pretrained), strict=False)
     for p in ms_net.parameters(): p.requires_grad = False
 
-    nt_net = sEMG_BERT(vocab_size=args.subframe, input_dim=12)
+    nt_net = sEMG_BERT(vocab_size=args.subframe, hidden=128, feature_dim=1, n_layers=4, attn_heads=8).to(device)
     nt_net.load_state_dict(ms_net.state_dict(), strict=False)
 
     ms = HookedModel(ms_net, feature_module_name='fc').to(device)

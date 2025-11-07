@@ -41,16 +41,17 @@ def load_state_flex(ckpt_path: str):
 
 
 def get_default_ckpt(method: str, subject: str,
-                     ckpt_ft_dir: str, ckpt_atl_dir: str, ckpt_cdanr_dir: str, ckpt_cdanrpp_dir: str) -> str:
-    """Resolve default best checkpoint path per method/subject following training scripts."""
+                     model:str) -> str:
+    base_dir = '../result/ninapro/Estimation_result'
+    noft_dir = '../result/ninapro/checkpoints_pretrain'
+    if method.lower() == 'no':
+        return os.path.join(noft_dir,f'{model}', 'model_best.pth')
     if method.lower() == 'ft':
-        return os.path.join(ckpt_ft_dir, f'ft_{subject}', 'ft_best.pth')
+        return os.path.join(base_dir,f'{model}',f'checkpoints_ft',f'ft_{subject}', 'ft_best.pth')
     if method.lower() == 'atl':
-        return os.path.join(ckpt_atl_dir, f'atl_{subject}', 'atl_best.pth')
-    if method.lower() == 'cdanr':
-        return os.path.join(ckpt_cdanr_dir, f'cdanr_{subject}', 'cdanr_best.pth')
+        return os.path.join(base_dir,f'{model}',f'checkpoints_atl', f'atl_{subject}', 'atl_best.pth')
     if method.lower() in ['cdanrpp', 'cdanr++', 'cdanr_plus']:
-        return os.path.join(ckpt_cdanrpp_dir, f'cdanrpp_{subject}', 'cdanrpp_best.pth')
+        return os.path.join(base_dir, f'{model}',f'checkpoints_cdanrpp',f'cdanrpp_{subject}', 'cdanrpp_best.pth')
     raise ValueError(f"Unknown method: {method}")
 
 
@@ -124,29 +125,21 @@ def jointwise_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
 def main():
     ap = argparse.ArgumentParser(description="Joint-wise evaluation for FT/ATL/CDANR/CDANR++ on NinaPro DB2")
     # Data
+    ap.add_argument('--model', type=str, default='sEMGMamba') #sEMGMamba、BERT
     ap.add_argument('--data_root', type=str, default='../../../feature/ninapro_db2_trans')
     ap.add_argument('--targets', nargs='+', default=[f"S{i}" for i in range(31, 41)])
-    ap.add_argument('--batch_size', type=int, default=64)
+    ap.add_argument('--batch_size', type=int, default=32)
     ap.add_argument('--subframe', type=int, default=200)
     ap.add_argument('--normalization', type=str, default='miu')
     ap.add_argument('--miu', type=float, default=2 ** 20)
 
     # Methods & checkpoints
-    ap.add_argument('--methods', nargs='+', default=['ft', 'cdanrpp'],
+    ap.add_argument('--methods', nargs='+', default=['no','ft', 'atl','cdanrpp'],
                     help='Choose from ft, atl, cdanr, cdanrpp')
-    ap.add_argument('--ckpt_ft_dir', type=str, default='../result/check/checkpoints_ft')
-    ap.add_argument('--ckpt_atl_dir', type=str, default='../result/check/checkpoints_atl')
-    ap.add_argument('--ckpt_cdanr_dir', type=str, default='../result/check/checkpoints_cdanr')
-    ap.add_argument('--ckpt_cdanrpp_dir', type=str, default='../result/check/checkpoints_cdanrpp')
-
-    # Optional smoothing
-    ap.add_argument('--savgol_window', type=int, default=0, help='Set >0 to enable Savitzky-Golay smoothing (odd window)')
-    ap.add_argument('--savgol_poly', type=int, default=2)
-
     # Device & output
     default_device = 'cuda' if torch.cuda.is_available() else 'cpu'
     ap.add_argument('--device', default=default_device)
-    ap.add_argument('--out_dir', type=str, default='../result/check')
+    ap.add_argument('--out_dir', type=str, default='/mnt/data_nvme/zwc/semg-code/resultFinal/ninapro')
 
     args = ap.parse_args()
     os.makedirs(args.out_dir, exist_ok=True)
@@ -162,7 +155,7 @@ def main():
         for method in args.methods:
             try:
                 ckpt_path = get_default_ckpt(method, subject,
-                                             args.ckpt_ft_dir, args.ckpt_atl_dir, args.ckpt_cdanr_dir, args.ckpt_cdanrpp_dir)
+                                             args.model)
             except ValueError:
                 print(f"[Skip] Unknown method {method}")
                 continue
@@ -193,12 +186,14 @@ def main():
             df.loc[len(df)] = ['MEAN', jw['NRMSE_mean'], jw['CC_mean'], jw['R2_mean']]
             df.loc[len(df)] = ['STD', jw['NRMSE_std'], jw['CC_std'], jw['R2_std']]
 
-            out_xlsx = os.path.join(args.out_dir, f'{subject}_{method}_joint_metrics.xlsx')
+            out_xlsx = os.path.join(args.out_dir,f'{args.model}',f'{subject}_{method}_joint_metrics.xlsx')
+            # 确保输出目录存在
+            os.makedirs(os.path.dirname(out_xlsx), exist_ok=True)
             try:
                 df.to_excel(out_xlsx, index=False)
             except Exception as e:
                 # If openpyxl not available, fall back to CSV
-                out_xlsx = os.path.join(args.out_dir, f'{subject}_{method}_joint_metrics.csv')
+                out_xlsx = os.path.join(args.out_dir, f'{args.model}',f'{subject}_{method}_joint_metrics.csv')
                 df.to_csv(out_xlsx, index=False)
 
             print(f"[{subject}][{method}] Saved joint metrics to: {out_xlsx}")
@@ -225,7 +220,10 @@ def main():
 
     if long_records:
         df_long = pd.DataFrame(long_records)
-        out_csv = os.path.join(args.out_dir, 'jointwise_summary_long.csv')
+        out_dir = os.path.join(args.out_dir, f'{args.model}')
+        out_csv = os.path.join(out_dir, 'jointwise_summary_long.csv')
+        # 确保输出目录存在
+        os.makedirs(os.path.dirname(out_csv), exist_ok=True)
         df_long.to_csv(out_csv, index=False)
         print(f"[Summary] Combined long-form CSV saved to: {out_csv}")
     else:

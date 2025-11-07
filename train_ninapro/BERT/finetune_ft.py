@@ -98,6 +98,9 @@ def run_ft_for_one_target(args, device, target_id: str):
         except Exception as e:
             print(f"[Warn] metric computation failed: {e}"); NRMSE=CC=R2=float('nan')
 
+        # 打印每轮的测试结果
+        print(f"Epoch [{epoch}/{args.epochs}] - Train MSE: {avg_train:.6f}, Val MSE: {avg_val:.6f}, NRMSE: {NRMSE:.6f}, CC: {CC:.6f}, R2: {R2:.6f}")
+
         writer.add_scalar("loss/train_mse", avg_train, epoch)
         writer.add_scalar("loss/val_mse", avg_val, epoch)
         writer.add_scalar("metrics/NRMSE", NRMSE, epoch)
