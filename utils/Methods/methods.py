@@ -258,51 +258,80 @@ def compute_metrics_numpy(y_true, y_pred):
     # R2：对每个输出通道求R2，再按方差加权
     R2 = float(r2_score(y_true.T, y_pred.T, multioutput="variance_weighted"))
     return NRMSE, CC, R2
-def savitzky_golay_smoothing(window_length, polyorder, data_tensor):
+import numpy as np
+import torch
+from scipy.signal import savgol_filter
+
+def savitzky_golay_smoothing(window_length: int, polyorder: int, data):
     """
-    对 PyTorch Tensor 数据应用 Savitzky-Golay 平滑。
-
-    参数:
-    window_length (int): 滤波器窗口长度。必须是奇数。
-    polyorder (int): 多项式拟合的阶数。必须小于 window_length。
-    data_tensor (torch.Tensor): 待平滑的输入数据（通常是模型的预测输出）。
-                                假设其形状为 [N, D]，其中 N 是时间步/样本数，D 是维度。
-
-    返回:
-    torch.Tensor: 平滑后的数据。
+    对 1D/2D 数据做 Savitzky–Golay 平滑。
+    - 支持 torch.Tensor 或 numpy.ndarray。
+    - 若是 Tensor：返回值为 Tensor，且保持原 device 与 dtype。
+    - 期望形状为 [N] 或 [N, D]，沿 axis=0（时间/样本轴）平滑。
     """
 
-    # 1. 检查参数
-    if window_length % 2 == 0 or window_length <= polyorder:
-        raise ValueError(
-            f"window_length ({window_length}) 必须是奇数且大于 polyorder ({polyorder})。"
-        )
-
-    # 2. 将 PyTorch Tensor 转换为 NumPy 数组
-    # Savitzky-Golay 通常在 CPU 上用 NumPy/SciPy 进行
-    if isinstance(data_tensor, torch.Tensor):
-        # 确保数据在 CPU 上，并转换为 NumPy
-        data_np = data_tensor.detach().cpu().numpy()
+    # ---- 0) 统一成 numpy，并记录是否需要还原为 torch ----
+    is_tensor = torch.is_tensor(data)
+    if is_tensor:
+        device = data.device
+        dtype  = data.dtype
+        data_np = data.detach().cpu().numpy()
     else:
-        # 如果输入已经是 NumPy 数组
-        data_np = np.array(data_tensor)
+        data_np = np.asarray(data)
 
-    # 3. 对每一列（即每个维度 D）独立应用平滑
-    # 如果 data_np 形状是 [N, D]，我们需要在 N 轴（axis=0）上平滑
+    # ---- 1) 形状规范化：支持 [N] 或 [N, D] ----
+    if data_np.ndim == 1:
+        data_np = data_np.reshape(-1, 1)   # 临时变成 [N,1]
+        squeeze_back = True
+    elif data_np.ndim == 2:
+        squeeze_back = False
+    else:
+        raise ValueError(f"data 的维度应为 1 或 2，当前是 {data_np.ndim} 维。")
 
-    # savgol_filter 自动处理多维数组
-    smoothed_np = savgol_filter(
-        x=data_np,
-        window_length=window_length,
-        polyorder=polyorder,
-        axis=0  # 沿着第一轴（时间轴/样本轴）进行平滑
-    )
+    N = data_np.shape[0]
+    if N < 2:
+        # 太短无法平滑，直接原样返回
+        out_np = data_np
+    else:
+        # ---- 2) 窗口与阶的鲁棒修正 ----
+        # 窗口必须为奇数且 <= N；最小取 3（若 N<3，则取 N 或 N-1 中最大的奇数）
+        if window_length <= 0:
+            window_length = 3
+        # 先限制到 N 以内
+        window_length = min(window_length, N)
+        # 变成奇数
+        if window_length % 2 == 0:
+            window_length = max(1, window_length - 1)
+            if window_length < 3 and N >= 3:
+                window_length = 3
+        # 若 N 仍然很小，保证 window_length >= 1 且为奇数
+        if window_length < 1:
+            window_length = 1 if N >= 1 else 1
 
-    # 4. 将 NumPy 数组转回 PyTorch Tensor (并放到原设备上)
-    # 使用 from_numpy 保持 Tensor 的类型和设备
-    smoothed_tensor = torch.from_numpy(smoothed_np).to(data_tensor.device)
+        # polyorder 必须 < window_length，且 >= 0
+        polyorder = max(0, min(polyorder, window_length - 1))
 
-    return smoothed_tensor
+        # 当窗口太小（比如 1）时，savgol 等价于不变
+        if window_length == 1:
+            out_np = data_np
+        else:
+            out_np = savgol_filter(
+                x=data_np,
+                window_length=window_length,
+                polyorder=polyorder,
+                axis=0,
+                mode="interp"
+            )
+
+    if squeeze_back:
+        out_np = out_np.reshape(-1)
+
+    # ---- 3) 还原类型：需要 torch 的话保持原 device/dtype ----
+    if is_tensor:
+        return torch.from_numpy(out_np).to(device=device, dtype=dtype)
+    else:
+        return out_np
+
 
 if __name__ == "__main__":
     x = np.array([1, 2, 3, 4, 5])

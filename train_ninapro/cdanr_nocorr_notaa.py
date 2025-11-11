@@ -31,21 +31,6 @@ def pearson_corr(y_hat: torch.Tensor, y: torch.Tensor, eps: float = 1e-8) -> tor
     rho = num / den
     return rho.mean()
 
-def corrboost_loss(y_hat: torch.Tensor, y: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
-    """CorrBoost = (1 - ρ) + 0.25*(-atanh(ρ))"""
-    if y_hat.dim() == 3 and y_hat.size(1) == 1: y_hat = y_hat.squeeze(1)
-    if y.dim() == 3 and y.size(1) == 1: y = y.squeeze(1)
-    y_hat_c = y_hat - y_hat.mean(dim=0, keepdim=True)
-    y_c     = y - y.mean(dim=0, keepdim=True)
-    num = (y_hat_c * y_c).sum(dim=0)
-    den = (y_hat_c.pow(2).sum(dim=0).sqrt() * y_c.pow(2).sum(dim=0).sqrt() + eps)
-    rho = num / den  # [C]
-    one_minus_rho = (1.0 - rho).mean()
-    rho_clamped = rho.clamp(-1 + 1e-4, 1 - 1e-4)
-    z = 0.5 * torch.log((1 + rho_clamped) / (1 - rho_clamped))
-    z_term = (-z).mean()
-    return one_minus_rho + 0.25 * z_term
-
 class GRL(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x, lambd: float):
@@ -270,8 +255,6 @@ def run_cdanrpp_for_target(args, device, target_subject: str, source_subjects: L
         total_reg, total_corr, total_adv, total_d, total_r1 = 0.0, 0.0, 0.0, 0.0, 0.0
 
         lam_adv = args.lambda_adv * min(1.0, epoch / float(max(1, args.adv_warmup_epochs)))
-        # Corr warmup: linearly ramp from 0 to target
-        lam_corr = args.lambda_corr * min(1.0, epoch / float(max(1, args.corr_warmup_epochs)))
 
         for (xb_t, yb_t, *_) in T_loader:
             # fetch target & source batches
@@ -327,8 +310,6 @@ def run_cdanrpp_for_target(args, device, target_subject: str, source_subjects: L
 
             # task: MSE + CorrBoost (with warmup)
             L_mse = reg_loss(y_hat_t, yb_t)
-            L_corr = corrboost_loss(y_hat_t, yb_t)
-            L_task = L_mse + lam_corr * L_corr
 
             # adversarial via GRL on both domains (source frozen)
             logit_s_g = D(grl(f_s.detach(), lam_adv), yb_s.detach())
@@ -336,7 +317,7 @@ def run_cdanrpp_for_target(args, device, target_subject: str, source_subjects: L
             L_adv = bce_logits(logit_s_g, torch.ones_like(logit_s_g)) + \
                     bce_logits(logit_t_g, torch.zeros_like(logit_t_g))
 
-            L = L_task + L_adv  # L_adv scaled by GRL
+            L = L_mse + L_adv  # L_adv scaled by GRL
 
             opt_g.zero_grad(set_to_none=True)
             L.backward()
@@ -345,7 +326,6 @@ def run_cdanrpp_for_target(args, device, target_subject: str, source_subjects: L
             if ema is not None: ema.update()
 
             total_reg += float(L_mse.item())
-            total_corr += float(L_corr.item())
             total_adv += float(L_adv.item())
 
         # ----- validation -----
@@ -357,23 +337,10 @@ def run_cdanrpp_for_target(args, device, target_subject: str, source_subjects: L
             for xb, yb, *_ in Te_loader:
                 xb = xb.squeeze(3).to(device)
                 yb = yb.to(device).float().view(yb.size(0), -1)
-                # TTA
-                if args.tta:
-                    yh_sum = 0.0
-                    for _ in range(args.tta_times):
-                        xb_aug = aug_gaussian_jitter(xb, args.tta_noise_std) if args.tta_noise_std > 0 else xb
-                        _, f = nt.forward_with_features(xb_aug)
-                        if f.dim() == 3 and f.size(1) == 1: f = f.squeeze(1)
-                        yh = nt.apply_head(f)
-                        if yh.dim() == 3 and yh.size(1) == 1: yh = yh.squeeze(1)
-                        yh_sum = yh_sum + yh
-                    y_hat = yh_sum / float(args.tta_times)
-                else:
-                    _, f = nt.forward_with_features(xb)
-                    if f.dim() == 3 and f.size(1) == 1: f = f.squeeze(1)
-                    y_hat = nt.apply_head(f)
-                    if y_hat.dim() == 3 and y_hat.size(1) == 1: y_hat = y_hat.squeeze(1)
-
+                _, f = nt.forward_with_features(xb)
+                if f.dim() == 3 and f.size(1) == 1: f = f.squeeze(1)
+                y_hat = nt.apply_head(f)
+                if y_hat.dim() == 3 and y_hat.size(1) == 1: y_hat = y_hat.squeeze(1)
                 val_mse += reg_loss(y_hat, yb).item()
                 preds_cpu.append(y_hat.detach().cpu()); targets_cpu.append(yb.detach().cpu())
             val_mse /= len(Te_loader)
@@ -391,7 +358,6 @@ def run_cdanrpp_for_target(args, device, target_subject: str, source_subjects: L
             writer.add_scalar("opt/lr_g", cur_lr_g, epoch)
             writer.add_scalar("opt/lr_d", cur_lr_d, epoch)
             writer.add_scalar("loss/train_mse", total_reg/len(T_loader), epoch)
-            writer.add_scalar("loss/train_corr", total_corr/len(T_loader), epoch)
             writer.add_scalar("loss/train_adv", total_adv/len(T_loader), epoch)
             writer.add_scalar("loss/train_D", total_d/len(T_loader), epoch)
             writer.add_scalar("loss/train_R1", total_r1/len(T_loader), epoch)
@@ -403,10 +369,9 @@ def run_cdanrpp_for_target(args, device, target_subject: str, source_subjects: L
 
         print(f"[CDAN-R++ {target_subject}] Epoch {epoch:03d}  "
               f"LRg={cur_lr_g:.2e} LRd={cur_lr_d:.2e}  "
-              f"train_mse={total_reg/len(T_loader):.6f}  train_corr={total_corr/len(T_loader):.6f}  "
               f"train_adv={total_adv/len(T_loader):.6f}  train_D={total_d/len(T_loader):.6f}  train_R1={total_r1/len(T_loader):.6f}  "
               f"Val(MSE)={val_mse:.6f}  NRMSE={NRMSE:.4f}  CC={CC:.4f}  R2={R2:.4f}  "
-              f"lam_adv={lam_adv:.3f}  lam_corr={lam_corr:.3f}  TTA={int(args.tta)}x{args.tta_times}@{args.tta_noise_std}")
+              f"lam_adv={lam_adv:.3f} ")
 
         # save best — by user-selected metric (default: cc)
         if args.select_metric == 'mse':
@@ -442,7 +407,7 @@ def main():
     # data
     ap.add_argument('--data_root', type=str, default='../../../feature/ninapro_db2_trans')
     ap.add_argument('--pretrained', type=str, default='../result/ninapro/checkpoints_pretrain/sEMGMamba/model_best.pth')
-    ap.add_argument('--targets', nargs='+', default=[f"S{i}" for i in range(31, 41)])
+    ap.add_argument('--targets', nargs='+', default=[f"S{i}" for i in range(36, 41)])
     ap.add_argument('--source_subjects', nargs='+', default=[f"S{i}" for i in range(1, 31)])
     ap.add_argument('--subframe', type=int, default=200)
     ap.add_argument('--normalization', type=str, default='miu')
@@ -463,8 +428,7 @@ def main():
     # losses
     ap.add_argument('--lambda_adv', type=float, default=0.5)
     ap.add_argument('--adv_warmup_epochs', type=int, default=5)
-    ap.add_argument('--lambda_corr', type=float, default=0.6)
-    ap.add_argument('--corr_warmup_epochs', type=int, default=10)
+
 
     # EMA
     ap.add_argument('--use_ema', action='store_true')
@@ -474,15 +438,12 @@ def main():
     ap.add_argument('--d_hidden', type=int, default=512)
     ap.add_argument('--r1_gamma', type=float, default=1.0)
 
-    # TTA & train_ninapro-time aug
-    ap.add_argument('--tta', action='store_true')
-    ap.add_argument('--tta_times', type=int, default=8)
-    ap.add_argument('--tta_noise_std', type=float, default=0.015)
+    # train_ninapro-time aug
     ap.add_argument('--train_noise_std', type=float, default=0.01)
     ap.add_argument('--train_drop_ch', type=float, default=0.1)
 
     # selection metric
-    ap.add_argument('--select_metric', type=str, default='cc', choices=['mse','nrmse','cc','r2'])
+    ap.add_argument('--select_metric', type=str, default='mse', choices=['mse','nrmse','cc','r2'])
 
     args = ap.parse_args()
     set_seed(525)
