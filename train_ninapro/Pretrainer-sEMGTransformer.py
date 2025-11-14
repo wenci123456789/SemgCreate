@@ -17,6 +17,7 @@ from sklearn import metrics as skmetrics
 from skimage import metrics
 
 from utils.sEMG_models.sEMG_TCN import sEMG_TCN
+from utils.sEMG_models.transformer import MAFN
 
 
 # reproducibility
@@ -37,13 +38,13 @@ def main():
     parser.add_argument('--subjects', nargs='+', default=[f"S{i}" for i in range(1, 31)])
     parser.add_argument('--data_root', type=str, default='../../../feature/ninapro_db2_trans')
     parser.add_argument('--epoch', type=int, default=200)
-    parser.add_argument('--lr', type=float, default=1e-4)
+    parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--subframe', type=int, default=200)
     parser.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
     parser.add_argument('--normalization', type=str, default='miu')
     parser.add_argument('--miu', type=int, default=2 ** 20)
-    parser.add_argument('--save_dir', type=str, default='../result/ninapro/checkpoints_pretrain/TCN')
+    parser.add_argument('--save_dir', type=str, default='../result/ninapro/checkpoints_pretrain/Transformer')
     args = parser.parse_args()
 
     seed_everything(525)
@@ -78,10 +79,11 @@ def main():
 
     # ============ 模型与优化 ============
     device = args.device
-    model = sEMG_TCN(12, [128, 128, 128, 128, 10], 3, 0.7).to(device)
+    model = MAFN(200, patch_size=1, in_c=1, num_classes=10, depth=4, num_heads=4, embed_dim=12,
+                         attn_drop_ratio=0, drop_ratio=0.3).to(device)
     reg_loss = nn.MSELoss()
     optimizer = optim.AdamW(model.parameters(), lr=args.lr)
-    scheduler = MultiStepLR(optimizer, milestones=[200], gamma=0.5)
+    scheduler = MultiStepLR(optimizer, milestones=[100], gamma=0.5)
 
     best_nrmse = math.inf
 
@@ -90,10 +92,9 @@ def main():
         model.train(); train_loss = 0.0
         for x, y, *_ in TrainLoader:
             x = x.squeeze(3).to(device)       # [B,200,12]
-            y = y.to(device)                  # [B,1,10]
+            y = y.squeeze(1).to(device)                  # [B,10]
             optimizer.zero_grad()
             pred = model(x)
-            pred = pred.mean(dim=1, keepdim=True)
             loss = reg_loss(pred, y)
             loss.backward(); optimizer.step()
             train_loss += loss.item()
@@ -105,14 +106,13 @@ def main():
         with torch.no_grad():
             for x, y, *_ in ValLoader:
                 x = x.squeeze(3).to(device)
-                y = y.to(device)
+                y = y.squeeze(1).to(device)
                 pred = model(x)
-                pred = pred.mean(dim=1, keepdim=True)
                 val_loss += reg_loss(pred, y).item()
                 preds.append(pred.cpu().numpy())
                 trues.append(y.cpu().numpy())
-        preds = np.concatenate(preds, axis=0)[:, 0, :]
-        trues = np.concatenate(trues, axis=0)[:, 0, :]  # [N, 10]
+        preds = np.concatenate(preds, axis=0)
+        trues = np.concatenate(trues, axis=0) # [N, 10]
         nrmse = metrics.normalized_root_mse(trues, preds)
         cc = pearson_CC(trues, preds)
         r2 = skmetrics.r2_score(trues, preds)

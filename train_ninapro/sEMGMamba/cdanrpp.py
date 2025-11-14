@@ -429,8 +429,8 @@ def run_cdanrpp_for_target(args, device, target_subject: str, source_subjects: L
 def main():
     ap = argparse.ArgumentParser(description="CDAN-R++ (EMGMambaAdapter) for NinaPro DB2 cross-subject regression (no CorrBoost / no TTA)")
     # data
-    ap.add_argument('--data_root', type=str, default='../../../feature/ninapro_db2_trans')
-    ap.add_argument('--pretrained', type=str, default='../result/ninapro/checkpoints_pretrain/sEMGMamba/model_best.pth')
+    ap.add_argument('--data_root', type=str, default='../../../../feature/ninapro_db2_trans')
+    ap.add_argument('--pretrained', type=str, default='../../result/ninapro/checkpoints_pretrain/sEMGMamba/model_best.pth')
     ap.add_argument('--targets', nargs='+', default=[f"S{i}" for i in range(31, 41)])
     ap.add_argument('--source_subjects', nargs='+', default=[f"S{i}" for i in range(1, 31)])
     ap.add_argument('--subframe', type=int, default=200)
@@ -446,7 +446,7 @@ def main():
     ap.add_argument('--sched', type=str, default='cosine', choices=['none','cosine'])
     ap.add_argument('--warmup_epochs', type=int, default=3)
     ap.add_argument('--tensorboard', action='store_true')
-    ap.add_argument('--save_dir', type=str, default='../result/ninapro/Estimation_result/sEMGMamba/checkpoints_cdanrpp')
+    ap.add_argument('--save_dir', type=str, default='../../result/ninapro/Estimation_result/sEMGMamba/checkpoints_cdanrpp')
     ap.add_argument('--head_name', type=str, default='output_proj')
 
     # adversarial
