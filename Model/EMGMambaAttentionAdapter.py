@@ -48,7 +48,7 @@ class CBAM(nn.Module):
 
 # 主干模型
 class EMGMambaAdapter(nn.Module):
-    def __init__(self, input_dim=12, hidden_dim=256, depth=5, output_dim=10,
+    def __init__(self, input_dim=12, hidden_dim=128, depth=4, output_dim=10,
                  d_state=16, d_conv=4, expand=2, dropout=0.1, kernel_sizes=(3,5,7)):
         super().__init__()
         self.name = "EMGMambaAdapter"

@@ -28,13 +28,10 @@ sys.path.append("..")
 from Model.EMGMambaAttentionAdapter import EMGMambaAdapter
 normalization = "miu"
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model_name = "Roformer"  # sEMGMamba Roformer LSTM Transformer
-trans_method = "noft" #cdanrpp atl ft noft
-test_subjects = [f"S{i}" for i in range(31, 41)]  # which subjects to test
+model_name = "sEMGMamba"  # sEMGMamba Roformer LSTM Transformer
+trans_method = "cdanrpp" #cdanrpp atl ft noft
+test_subjects = ['S1', 'S4']  # which subjects to test , 'S7', 'S8', 'S11', 'S13', 'S18', 'S20', 'S22', 'S24', 'S27', 'S31', 'S34', 'S36', 'S39'
 # 'S1','S3','S5','S9','S10','S11','S13','S14','S21','S23','S24','S27','S29','S30','S33'
-if "S0" in test_subjects:
-    test_subjects.remove("S0")
-    test_subjects = ['S1','S3','S5','S9','S10','S11','S13','S14','S21','S23','S24','S27','S29','S30','S33'] + test_subjects
 
 
 def data_wrapper_leconv(data):
@@ -166,15 +163,15 @@ if __name__ == "__main__":
     stdcclist = []
     stdmselist = []
     stdr2list = []
+    NUM_FOLDS = 5
+    fold_index = 0
     for subject in test_subjects:
         try:
             if trans_method == "noft":
-                ckpt = f'../result/ninapro/checkpoints_pretrain/{model_name}/model_best.pth'
+                ckpt = f'../result/ninapro/checkpoints_fold_pretrain/{model_name}/fold{fold_index % NUM_FOLDS + 1}/model_best.pth'
+                fold_index = fold_index + 1
             else:
-                if model_name == "Roformer":
-                    ckpt = f'../result/ninapro/Estimation_result/{model_name}/checkpoints_{trans_method}/{trans_method}_roformer_{subject}/{trans_method}_best.pth'
-                else:
-                    ckpt = f'../result/ninapro/Estimation_result/{model_name}/checkpoints_{trans_method}/{trans_method}_{subject}/{trans_method}_best.pth'
+                ckpt = f'../result/ninapro/Estimation_fold_result/{model_name}/checkpoints_{trans_method}/{trans_method}_{subject}/{trans_method}_best.pth'
             state = load_state_flex(ckpt)
             if model_name== "sEMGMamba":
                 model = EMGMambaAdapter(input_dim=12, output_dim=10).to(device)
@@ -212,7 +209,7 @@ if __name__ == "__main__":
         'stdR²': stdr2list
 
     })
-    output_file = f'/mnt/data_nvme/zwc/semg-code/resultFinal/ninapro/{model_name}/{trans_method}/{model_name}_{trans_method}_results.xlsx'
+    output_file = f'/mnt/data_nvme/zwc/semg-code/resultFinal/ninapro/{model_name}/{model_name}_{trans_method}_results.xlsx'
     df.to_excel(output_file, index=False)
     print("=" * 49 + "==" + "=" * 49)
 

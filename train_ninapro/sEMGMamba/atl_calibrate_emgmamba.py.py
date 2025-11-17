@@ -229,8 +229,7 @@ def run_atl_for_target(args, device, target_subject: str, source_subjects: list)
 def main():
     ap = argparse.ArgumentParser(description="ATL calibrate EMGMamba (align with finetune_ft logging & metrics)")
     ap.add_argument('--data_root', type=str, default='../../../../feature/ninapro_db2_trans')
-    ap.add_argument('--pretrained', type=str, default='../../result/ninapro/checkpoints_pretrain/sEMGMamba/model_best.pth')
-    ap.add_argument('--save_dir', type=str, default='../../result/ninapro/Estimation_result/sEMGMamba/checkpoints_atl')
+    ap.add_argument('--save_dir', type=str, default='../../result/ninapro/Estimation_fold_result/sEMGMamba/checkpoints_atl')
     ap.add_argument('--epochs', type=int, default=50)
     ap.add_argument('--batch_size', type=int, default=64)
     ap.add_argument('--lr_t', type=float, default=1e-3)
@@ -240,33 +239,29 @@ def main():
     ap.add_argument('--normalization', type=str, default='miu')
     ap.add_argument('--miu', type=int, default=2 ** 20)
     ap.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
-    ap.add_argument('--targets', nargs='+', default=[f"S{i}" for i in range(31, 41)])
-    ap.add_argument('--source_subjects', nargs='+', default=[f"S{i}" for i in range(1, 31)])
     ap.add_argument('--eval_metrics', action='store_true', default=True)
     ap.add_argument('--select_metric', type=str, default='mse', choices=['mse','nrmse','cc','r2'])
 
     args = ap.parse_args()
     os.makedirs(args.save_dir, exist_ok=True)
     device = args.device
+    CV_VAL_SPLIT = {
+        1: ['S1', 'S4', 'S7'],
+        2: ['S8', 'S11', 'S13'],
+        3: ['S18', 'S20', 'S22'],
+        4: ['S24', 'S27', 'S31'],
+        5: ['S34', 'S36', 'S39']
+    }
+    ALL_SUBJECTS = ['S1', 'S4', 'S7', 'S8', 'S11', 'S13', 'S18', 'S20', 'S22', 'S24', 'S27', 'S31', 'S34', 'S36', 'S39']
 
-    # 解析 targets
-    if args.targets and len(args.targets) > 0:
-        targets = args.targets
-    elif args.target_subject:
-        targets = [args.target_subject]
-    else:
-        raise ValueError("请用 --targets S31 S32 ...（推荐）或 --target_subject S31 指定目标被试。")
-
-    print(f"Pretrained: {args.pretrained}")
-    print(f"Targets: {targets}")
-    print(f"Sources: {args.source_subjects}")
-    print(f"Save dir: {args.save_dir}")
-    print(f"Select metric: {args.select_metric}")
-
-    for tgt in targets:
-        print(f"\n====== ATL start: {tgt} ======")
-        run_atl_for_target(args, device, tgt, args.source_subjects)
-        print(f"====== ATL done : {tgt} ======\n")
-
+    for fold, subjects in CV_VAL_SPLIT.items():
+        print(f"第{fold}折: {subjects}")
+        train_subjects = [s for s in ALL_SUBJECTS if s not in subjects]
+        for tgt in subjects:
+            args.pretrained = f"../../result/ninapro/checkpoints_fold_pretrain/sEMGMamba/fold{fold}/model_best.pth"
+            print(f"\n====== AFT start: {tgt} ======")
+            run_atl_for_target(args, device, tgt, train_subjects)
+            print(f"====== AFT done : {tgt} ======\n")
+        print(f"第{fold}折处理完毕")
 if __name__ == "__main__":
         main()

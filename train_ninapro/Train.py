@@ -40,7 +40,7 @@ def pearson_CC(x, y):
 def main():
     parser = argparse.ArgumentParser(description='Pretrain Multi-s-net with K-fold CV (subject-level)')
     # 默认还是 S1~S30，你可以在命令行改成你选的那 15 个被试
-    parser.add_argument('--subjects', nargs='+', default=["S1", "S4", "S7", "S8", "S11", "S13", "S18", "S20", "S22", "S24", "S27", "S31", "S34", "S36", "S39"])
+    parser.add_argument('--subjects', nargs='+', default=[f"S{i}" for i in range(1, 41)])
     parser.add_argument('--k_folds', type=int, default=5, help='number of folds for subject-level CV')
     parser.add_argument('--data_root', type=str, default='../../../feature/ninapro_db2_trans')
     parser.add_argument('--epoch', type=int, default=200)
@@ -106,7 +106,7 @@ def main():
             )
 
         # 验证集：仅 val_subjects，且只用 *_rms_test.h5
-        for sid in train_subjects:
+        for sid in val_subjects:
             emg_te = os.path.join(args.data_root, f"{sid}_E2_A1_rms_test.h5")
             glove_te = os.path.join(args.data_root, f"{sid}_E2_A1_glove_test.h5")
 

@@ -359,11 +359,8 @@ def run_cdanrpp_for_target(args, device, target_subject: str, source_subjects: L
             try:
                 yh_np = torch.cat(preds_cpu, dim=0).numpy().reshape(-1, 10)
                 y_np  = torch.cat(targets_cpu, dim=0).numpy().reshape(-1, 10)
-                # 仍计算 NRMSE / R2（CC 不采用该函数返回值）
-                NRMSE, _CC_unused, R2 = compute_metrics_numpy(y_np, yh_np)
-                # === 关键：逐关节 Pearson CC 后求平均（与 Estimation.py 对齐） ===
-                cc_list = [pearson_CC(y_np[:, i], yh_np[:, i]) for i in range(10)]
-                CC = float(np.mean(cc_list))
+                # 仍计算 NRMSE / R2（
+                NRMSE, CC, R2 = compute_metrics_numpy(y_np, yh_np)
             except Exception as e:
                 print(f"[Warn] metric computation failed: {e}")
                 NRMSE, CC, R2 = float('nan'), float('nan'), float('nan')
@@ -380,7 +377,7 @@ def run_cdanrpp_for_target(args, device, target_subject: str, source_subjects: L
                 writer.add_scalar("loss/train_R1", total_r1/len(T_loader), epoch)
             writer.add_scalar("loss/val_mse", val_mse, epoch)
             writer.add_scalar("metrics/NRMSE", NRMSE, epoch)
-            writer.add_scalar("metrics/CC_mean_per_joint", CC, epoch)
+            writer.add_scalar("metrics/CC", CC, epoch)
             writer.add_scalar("metrics/R2", R2, epoch)
             writer.flush()
 
@@ -389,7 +386,7 @@ def run_cdanrpp_for_target(args, device, target_subject: str, source_subjects: L
               f"train_mse={total_reg/len(T_loader):.6f}  train_adv={total_adv/len(T_loader):.6f}  "
               f"train_D={total_d/len(T_loader):.6f}  "
               f"{'train_R1='+format(total_r1/len(T_loader),'.6f') if args.r1_gamma>0 else ''}  "
-              f"Val(MSE)={val_mse:.6f}  NRMSE={NRMSE:.4f}  CC(mean@10)={CC:.4f}  R2={R2:.4f}  "
+              f"Val(MSE)={val_mse:.6f}  NRMSE={NRMSE:.4f}  CC={CC:.4f}  R2={R2:.4f}  "
               f"lam_adv={lam_adv:.3f}")
 
         # ---------- 保存 ----------
@@ -430,9 +427,6 @@ def main():
     ap = argparse.ArgumentParser(description="CDAN-R++ (EMGMambaAdapter) for NinaPro DB2 cross-subject regression (no CorrBoost / no TTA)")
     # data
     ap.add_argument('--data_root', type=str, default='../../../../feature/ninapro_db2_trans')
-    ap.add_argument('--pretrained', type=str, default='../../result/ninapro/checkpoints_pretrain/sEMGMamba/model_best.pth')
-    ap.add_argument('--targets', nargs='+', default=[f"S{i}" for i in range(31, 41)])
-    ap.add_argument('--source_subjects', nargs='+', default=[f"S{i}" for i in range(1, 31)])
     ap.add_argument('--subframe', type=int, default=200)
     ap.add_argument('--normalization', type=str, default='miu')
     ap.add_argument('--miu', type=float, default=2 ** 20)
@@ -446,7 +440,7 @@ def main():
     ap.add_argument('--sched', type=str, default='cosine', choices=['none','cosine'])
     ap.add_argument('--warmup_epochs', type=int, default=3)
     ap.add_argument('--tensorboard', action='store_true')
-    ap.add_argument('--save_dir', type=str, default='../../result/ninapro/Estimation_result/sEMGMamba/checkpoints_cdanrpp')
+    ap.add_argument('--save_dir', type=str, default='../../result/ninapro/Estimation_fold_result/sEMGMamba/checkpoints_cdanrpp')
     ap.add_argument('--head_name', type=str, default='output_proj')
 
     # adversarial
@@ -471,17 +465,24 @@ def main():
     args = ap.parse_args()
     set_seed(525)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    CV_VAL_SPLIT = {
+        1: ['S1', 'S4', 'S7'],
+        2: ['S8', 'S11', 'S13'],
+        3: ['S18', 'S20', 'S22'],
+        4: ['S24', 'S27', 'S31'],
+        5: ['S34', 'S36', 'S39']
+    }
+    ALL_SUBJECTS = ['S1', 'S4', 'S7', 'S8', 'S11', 'S13', 'S18', 'S20', 'S22', 'S24', 'S27', 'S31', 'S34', 'S36', 'S39']
 
-    print(f"Pretrained: {args.pretrained}")
-    print(f"Targets: {args.targets}")
-    print(f"Sources: {args.source_subjects}")
-    print(f"Save dir: {args.save_dir}")
-    print(f"Select metric: {args.select_metric}")
-
-    for tgt in args.targets:
-        print(f"\n====== CDAN-R++ start: {tgt} ======")
-        run_cdanrpp_for_target(args, device, tgt, args.source_subjects)
-        print(f"====== CDAN-R++ done : {tgt} ======\n")
+    for fold, subjects in CV_VAL_SPLIT.items():
+        print(f"第{fold}折: {subjects}")
+        train_subjects = [s for s in ALL_SUBJECTS if s not in subjects]
+        for tgt in subjects:
+            args.pretrained = f"../../result/ninapro/checkpoints_fold_pretrain/sEMGMamba/fold{fold}/model_best.pth"
+            print(f"\n====== CDAN-R++ start: {tgt} ======")
+            run_cdanrpp_for_target(args, device, tgt, train_subjects)
+            print(f"====== CDAN-R++ done : {tgt} ======\n")
+        print(f"第{fold}折处理完毕")
 
 if __name__ == '__main__':
     main()

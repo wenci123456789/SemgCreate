@@ -125,11 +125,6 @@ def run_ft_for_one_target(args, device, target_id: str):
         else:
             NRMSE, CC, R2 = float('nan'), float('nan'), float('nan')
 
-        # 打印
-        print(f"[FT {target_id}] Epoch {epoch:03d}  "
-              f"Train(MSE)={avg_train:.6f}  Val(MSE)={avg_val:.6f}  "
-              f"NRMSE={NRMSE:.4f}  CC={CC:.4f}  R2={R2:.4f}")
-
         # 通用评分逻辑 + 保存
         if args.select_metric == 'mse':
             cur_score = avg_val; is_better = cur_score < best_score
@@ -166,13 +161,7 @@ def run_ft_for_one_target(args, device, target_id: str):
 def main():
     ap = argparse.ArgumentParser(description="Fine-tuning (FT) with multi-target support & rich metrics")
     ap.add_argument('--data_root', type=str, default='../../../../feature/ninapro_db2_trans')
-    # 让 --pretrained 有默认值；也可在命令行覆盖
-    ap.add_argument('--pretrained', type=str, default='../../result/ninapro/checkpoints_pretrain/sEMGMamba/model_best.pth')
-    # 向后兼容的单目标
-    ap.add_argument('--target_subject', type=str, default=None)
-    # 多目标：S31 S32 ... S40
-    ap.add_argument('--targets', nargs='+', default=[f"S{i}" for i in range(31, 41)])
-    ap.add_argument('--save_dir', type=str, default='../../result/ninapro/Estimation_result/sEMGMamba/checkpoints_ft')
+    ap.add_argument('--save_dir', type=str, default='../../result/ninapro/Estimation_fold_result/sEMGMamba/checkpoints_ft')
     ap.add_argument('--epochs', type=int, default=50)
     ap.add_argument('--batch_size', type=int, default=64)
     ap.add_argument('--lr', type=float, default=1e-3)
@@ -189,27 +178,26 @@ def main():
                     help='用哪个指标选择 best（mse/nrmse 越小越好；cc/r2 越大越好）')
 
     args = ap.parse_args()
-
-    # 兼容：--targets 优先；否则退回到 --target_subject
-    if args.targets is not None and len(args.targets) > 0:
-        targets = args.targets
-    elif args.target_subject is not None:
-        targets = [args.target_subject]
-    else:
-        raise ValueError("请通过 --targets S31 S32 ... 或 --target_subject S31 指定受试者。")
+    CV_VAL_SPLIT = {
+        1: ['S1', 'S4', 'S7'],
+        2: ['S8', 'S11', 'S13'],
+        3: ['S18', 'S20', 'S22'],
+        4: ['S24', 'S27', 'S31'],
+        5: ['S34', 'S36', 'S39']
+    }
 
     os.makedirs(args.save_dir, exist_ok=True)
     device = args.device
 
-    print(f"Pretrained: {args.pretrained}")
-    print(f"Targets: {targets}")
-    print(f"μ-law miu={args.miu}, subframe={args.subframe}")
-    print(f"Select metric: {args.select_metric}")
-
-    for tgt in targets:
-        print(f"\n====== FT start: {tgt} ======")
-        run_ft_for_one_target(args, device, tgt)
-        print(f"====== FT done : {tgt} ======\n")
+    for fold, subjects in CV_VAL_SPLIT.items():
+        print(f"第{fold}折: {subjects}")
+        # 可以进一步处理每个被试者
+        for tgt in subjects:
+            args.pretrained = f"../../result/ninapro/checkpoints_fold_pretrain/sEMGMamba/fold{fold}/model_best.pth"
+            print(f"\n====== FT start: {tgt} ======")
+            run_ft_for_one_target(args, device, tgt)
+            print(f"====== FT done : {tgt} ======\n")
+        print(f"第{fold}折处理完毕")
 
 if __name__ == '__main__':
     main()
