@@ -56,7 +56,7 @@ def run_ft_for_one_target(args, device, target_id: str):
                             lr=args.lr, weight_decay=1e-4)
 
     # -------- 日志与保存 --------
-    save_dir_one = os.path.join(args.save_dir, f"ft_roformer_{target_id}")
+    save_dir_one = os.path.join(args.save_dir, f"ft_{target_id}")
     os.makedirs(save_dir_one, exist_ok=True)
     writer = SummaryWriter(log_dir=os.path.join(save_dir_one, "tb"))
     csv_path = os.path.join(save_dir_one, "history.csv")
@@ -136,12 +136,12 @@ def run_ft_for_one_target(args, device, target_id: str):
             cur_score, is_better = avg_val, (avg_val < best_score)
 
         torch.save({'epoch': epoch, 'model_state': model.state_dict()},
-                   os.path.join(save_dir_one, 'ft_roformer_latest.pth'))
+                   os.path.join(save_dir_one, 'ft_latest.pth'))
 
         if is_better and not (isinstance(cur_score, float) and (math.isnan(cur_score) or math.isinf(cur_score))):
             best_score = cur_score
             torch.save({'epoch': epoch, 'model_state': model.state_dict()},
-                       os.path.join(save_dir_one, 'ft_roformer_best.pth'))
+                       os.path.join(save_dir_one, 'ft_best.pth'))
 
         csv_w.writerow([epoch, avg_train, avg_val, NRMSE, CC, R2,
                         args.select_metric, cur_score, int(is_better)])

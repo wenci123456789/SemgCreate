@@ -258,7 +258,7 @@ def run_cdanr_roformer_for_target(args, device, target_subject: str, source_subj
 
     # 日志/保存
     os.makedirs(args.save_dir, exist_ok=True)
-    save_dir_one = os.path.join(args.save_dir, f"cdanrpp_roformer_{target_subject}")
+    save_dir_one = os.path.join(args.save_dir, f"cdanrpp_{target_subject}")
     os.makedirs(save_dir_one, exist_ok=True)
     writer = SummaryWriter(log_dir=os.path.join(save_dir_one, "tb")) if args.tensorboard else None
 
